@@ -17,14 +17,6 @@ from torchvision.datasets import FashionMNIST
 import torchsummary
 import csv
 
-#自作関数軍
-import sys
-sys.path.append('..')
-from lib import readfile as rf
-#partsのセットを行う
-from lib import partsset as ps
-#データをファイルから読み込むためのローダ
-import learning.archive_nn.dataload as dl
 
 
 #---------------------------------------------------
@@ -62,7 +54,6 @@ model_save=1        #モデルを保存するかどうか 1なら保存
 data_frames=6       #学習1dataあたりのフレーム数
 all_data_frames=1800    #元データの読み取る最大フレーム数
 
-choice_mode=0   #テストのチョイスを変更する
 fc1=4096
 fc2=8192
 
@@ -135,32 +126,14 @@ for i in range(len(motions)):
     np_Tdata_label[test_n*i:test_n*(i+1)]=i
 
 
-#choiceモード(一部をテスト)は一時無効化
-'''
-if choice_mode==1:
-    choice_test_n=data_n-int(all_data_frames/data_frames*0.3)
-    np_choice_Tdata=np.zeros((choice_test_n*len(choice_test_motions),data_frames,data_cols))
-    np_choice_Tdata_label=np.zeros(choice_test_n*len(choice_test_motions))
-    print(choice_test_n,test_n,data_n,learn_n)
-    for i in range(len(choice_test_motions)):
-        choice_i=motions.index(choice_test_motions[i])
-        np_choice_Tdata[i*test_n:(i+1)*test_n]=np_Tdata[choice_i*test_n:(choice_i+1)*test_n]
-        np_choice_Tdata_label[i*choice_test_n:(i+1)*choice_test_n]=choice_i
-'''
 
 
 
 #numpy->torch
 t_data = torch.from_numpy(np_data)
 t_data_label = torch.from_numpy(np_data_label)
-if choice_mode==0:
-    t_Tdata = torch.from_numpy(np_Tdata)
-    t_Tdata_label = torch.from_numpy(np_Tdata_label)
-'''
-else:
-    t_Tdata = torch.from_numpy(np_choice_Tdata)
-    t_Tdata_label = torch.from_numpy(np_choice_Tdata_label)
-'''
+t_Tdata = torch.from_numpy(np_Tdata)
+t_Tdata_label = torch.from_numpy(np_Tdata_label)
 
 class dataset_class(Dataset):
     def __init__(self,data,labels, transform=None):
@@ -223,6 +196,18 @@ def evaluate(model, lossFunc, dl):
         ncorrect += (Y.argmax(dim=1) == lab).sum().item()  # 正解数
 
     return loss_sum/n, ncorrect/n
+
+def evaluate_test(model, dl, motions_len):
+    n = 0
+    chart=np.zeros([motions_len,motions_len])
+    for i, (X, lab) in enumerate(dl):
+        lab=lab.long()
+        X, lab = X.to(device), lab.to(device)
+        X = X.float()  # 入力データをFloat型に変換
+        Y = model(X)           # 一つのバッチ X を入力して出力 Y を計算
+        n += len(X)
+        chart[Y.argmax(dim=1)][lab]+=1
+    return chart/n
 
 ##### 学習結果の表示用関数
 # 学習曲線の表示
@@ -304,9 +289,16 @@ for t in range(1, nepoch+1):
     results.append([t, lossL, lossT, rateL, rateT])
     if(t%10==0):
         print(f'{t:3d}   {lossL:.6f}   {lossT:.6f}   {rateL:.5f}   {rateT:.5f}')
+
+chart=evaluate_test(net,dlL,len(motions))
 printdata([fc1,fc2],"1111_15motions")
+
+
+
 if model_save==0:
     exit(0)
+
+
 
 torch.save(net.state_dict(),'rawlearn.path')
 print('model saved')
