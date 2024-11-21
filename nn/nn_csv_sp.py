@@ -51,13 +51,16 @@ motions=[
 ]
 
 model_save=1        #モデルを保存するかどうか 1なら保存
-data_frames=6       #学習1dataあたりのフレーム数
+data_frames=20       #学習1dataあたりのフレーム数
 all_data_frames=1800+data_frames    #元データの読み取る最大フレーム数
 
 bs=10   #バッチサイズ　一回のデータ入力回数
 
-fc1=256
-fc2=256
+fc1=512
+fc2=512
+
+# 学習の繰り返し回数
+nepoch = 10
 
 choice_parts=[0,1,2]
 delete_parts=[3,4,5]
@@ -137,7 +140,7 @@ for i in range(len(motions)):
 data_n=int(all_data_frames-data_frames)  #切り分けた後のdataの数(重ね合わせあり)
 learn_n=int(data_n*learn_par)  #１モーションの学習のデータ数 3割を学習に
 test_n=int(data_n-learn_n) #１モーションのテストのデータ数   7割をテストに
-print(data_n,learn_n,test_n)
+#print(data_n,learn_n,test_n)
 
 np_data=np.zeros((learn_n*len(motions),data_frames,cap_cols))
 np_data_label=np.zeros(learn_n*len(motions))
@@ -313,8 +316,7 @@ loss_func = nn.CrossEntropyLoss(reduction='sum')
 # パラメータ最適化器
 optimizer = torch.optim.Adam(net.parameters(), lr=1e-5)
 
-# 学習の繰り返し回数
-nepoch = 200
+
 
 # 学習
 results = []

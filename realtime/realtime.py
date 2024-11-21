@@ -7,30 +7,35 @@ import numpy as np
 import torch
 import torch.nn as nn
 import torchsummary
-
+import torch.nn.functional as F  # ソフトマックス用
 
 host = ''
-port = 52353
+port = 5002
 
 
 udp_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-udp_socket.bind((host, port))
 
-# 受信用のバッファーサイズを設定
-buffer_size = 8192
+#my home
+#udp_socket.bind(("192.168.10.110", 5002))  # IPアドレスを指定してバインド
 
-nframes=6
+#ryukoku
+udp_socket.bind(("133.83.82.105", 5002))
+
+nframes=20
 parts=6
 dof=7
 
-model_path=''
-fc_1=2048
-fc_2=4096
+model_path='../nn/rawlearn.path'
+fc_1=1024
+fc_2=1024
 
+
+choice_parts=[0,1,2]
+delete_parts=[]
 
 #data=[Nframe][6parts][7dof]
-in_data=np.empty((nframes,parts,dof))
-
+in_data=np.empty((nframes,parts*dof))
+choice_in_data=np.empty((nframes,len(choice_parts)*dof))
 #最初のnframeまでは前側のデータが足りないため
 #データがそろうまではmodel読み込みをスキップ
 flag=0
@@ -88,9 +93,9 @@ model = MLP4(nframes*parts*dof,fc_1,fc_2, len(motions))
 #モデルを読み込む
 model.load_state_dict(torch.load(model_path))
 print(f"UDP 受信開始。ホスト: {host}, ポート: {port}")
-outfile=input("output file name?")
 n=0
 fr=0
+
 
 for tm in range(3):
     print(3-tm)
@@ -100,13 +105,44 @@ print("start")
 nframe=0
 while True:
     try:
-        data, addr = udp_socket.recvfrom(1024)  # データを受信
+        data, addr = udp_socket.recvfrom(4096)  # データを受信
+        
+
+        #データがそろっていないときの処理
+        if nframe<nframes:
+            for i in range(6):
+                tupledata=struct.unpack('<fffffff', data[i*40:i*40+28])
+                for j in range(7):
+                    in_data[nframe][i*7+j]=tupledata[j]
+            j=0
+            for i in choice_parts:
+                choice_in_data[nframe][j*dof:(j+1)*dof]=in_data[nframe][i:(i+1)*dof]
+                j+=1
+            nframe+=1
+            continue
+            
+        #np_dataを更新して配列の最後frameを開ける
+        #データをunpackする
+        in_data[:-1] = in_data[1]
+        for i in range(6):
+            tupledata=struct.unpack('<fffffff', data[i*40:i*40+28])
+            for j in range(7):
+                in_data[-1][i*7+j]=tupledata[j]
+        j=0
+        for i in choice_parts:
+            choice_in_data[nframe][j*dof:(j+1)*dof]=in_data[nframe][i:(i+1)*dof]
+            j+=1
         nframe+=1
 
-        #開始のフレームより早いなら処理しない
-        if nframe<minframe:
-            continue
+        #nnに入力していく
+        t_in_data = torch.from_numpy(choice_in_data).float()
+        t_in_data = t_in_data.view(1, -1)
+        Y = model(t_in_data)
+        probs = F.softmax(Y, dim=1)  # ソフトマックスで確率に変換
+        predicted_class = Y.argmax(dim=1).item()  # 最も確率の高いクラス
+        confidence = probs[0, predicted_class].item()  # 確信度（確率）
 
+        print(f"予測クラス: {motions[predicted_class]} (確信度: {confidence * 100:.2f}%)")
 
                     
             
