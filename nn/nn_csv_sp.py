@@ -22,7 +22,7 @@ import csv
 #---------------------------------------------------
 #パラメータここから
 # クラス番号とクラス名
-dataset_path="./dataset/"
+dataset_path="../dataset/"
 dataset_days="1111"
 
 
@@ -52,7 +52,7 @@ motions=[
 
 model_save=1        #モデルを保存するかどうか 1なら保存
 data_frames=6       #学習1dataあたりのフレーム数
-all_data_frames=1800    #元データの読み取る最大フレーム数
+all_data_frames=1800+data_frames    #元データの読み取る最大フレーム数
 
 bs=10   #バッチサイズ　一回のデータ入力回数
 
@@ -66,11 +66,8 @@ delete_parts=[3,4,5]
 
 data_cols=(7+2)*6       #csvの列数
 cap_cols=7*6            #7DoFdataのみのデータの列数
-data_n=int(all_data_frames/data_frames)  #切り分けた後のdataの数(重ね合わせなし)
 
-learn_n=int(data_n*0.8)  #１モーションの学習のデータ数 3割を学習に
-test_n=int(data_n-learn_n) #１モーションのテストのデータ数   7割をテストに
-print(data_n,learn_n,test_n)
+learn_par=0.8
 
 
 #cudaの準備
@@ -107,6 +104,14 @@ for i in range(len(motions)):
 if len(delete_parts) == 0:
     all_cap_choice_data=all_cap_data
 
+
+#重ね合わせなし
+'''
+data_n=int(all_data_frames/data_frames)  #切り分けた後のdataの数(重ね合わせなし)
+learn_n=int(data_n*learn_par)  #１モーションの学習のデータ数 3割を学習に
+test_n=int(data_n-learn_n) #１モーションのテストのデータ数   7割をテストに
+print(data_n,learn_n,test_n)
+
 np_data=np.zeros((learn_n*len(motions),data_frames,cap_cols))
 np_data_label=np.zeros(learn_n*len(motions))
 np_Tdata=np.zeros((test_n*len(motions),data_frames,cap_cols))
@@ -126,7 +131,33 @@ for i in range(len(motions)):
 for i in range(len(motions)):
     np_data_label[learn_n*i:learn_n*(i+1)]=i
     np_Tdata_label[test_n*i:test_n*(i+1)]=i
+'''
 
+#重ね合わせあり
+data_n=int(all_data_frames-data_frames)  #切り分けた後のdataの数(重ね合わせあり)
+learn_n=int(data_n*learn_par)  #１モーションの学習のデータ数 3割を学習に
+test_n=int(data_n-learn_n) #１モーションのテストのデータ数   7割をテストに
+print(data_n,learn_n,test_n)
+
+np_data=np.zeros((learn_n*len(motions),data_frames,cap_cols))
+np_data_label=np.zeros(learn_n*len(motions))
+np_Tdata=np.zeros((test_n*len(motions),data_frames,cap_cols))
+np_Tdata_label=np.zeros(test_n*len(motions))
+
+print('np_data_shape=',np_data.shape)
+
+for i in range(len(motions)):
+    for f in range(learn_n):
+        np_data[i*learn_n+f]=all_cap_choice_data[i][f:f+data_frames]
+
+for i in range(len(motions)):
+    for f in range(test_n):
+        np_Tdata[i*test_n+f]=all_cap_choice_data[i][f+learn_n:f+data_frames+learn_n]
+
+#ラベルセット
+for i in range(len(motions)):
+    np_data_label[learn_n*i:learn_n*(i+1)]=i
+    np_Tdata_label[test_n*i:test_n*(i+1)]=i
 
 
 
@@ -295,13 +326,9 @@ for t in range(1, nepoch+1):
     if(t%10==0):
         print(f'{t:3d}   {lossL:.6f}   {lossT:.6f}   {rateL:.5f}   {rateT:.5f}')
 
-<<<<<<< HEAD:nn_csv_sp.py
-chart=evaluate_test(net,dlT,len(motions))
-=======
 #print(torch.flatten(dlT).shape)
 chart=evaluate_test(net,dlT,len(motions))
 print(chart)
->>>>>>> 50a0cb16ea022c109141478053e405855f0451ed:nn/nn_csv_sp.py
 printdata([fc1,fc2],"1111_15motions")
 
 

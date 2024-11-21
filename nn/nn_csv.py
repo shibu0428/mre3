@@ -17,20 +17,12 @@ from torchvision.datasets import FashionMNIST
 import torchsummary
 import csv
 
-#自作関数軍
-import sys
-sys.path.append('..')
-from lib import readfile as rf
-#partsのセットを行う
-from lib import partsset as ps
-#データをファイルから読み込むためのローダ
-import learning.archive_nn.dataload as dl
 
 
 #---------------------------------------------------
 #パラメータここから
 # クラス番号とクラス名
-dataset_path="../dataset/"
+dataset_path="./dataset/"
 dataset_days="1111"
 
 
@@ -59,12 +51,16 @@ motions=[
 ]
 
 model_save=1        #モデルを保存するかどうか 1なら保存
-data_frames=2       #学習1dataあたりのフレーム数
+data_frames=6       #学習1dataあたりのフレーム数
 all_data_frames=1800    #元データの読み取る最大フレーム数
 
-choice_mode=0   #テストのチョイスを変更する
-fc1=4096
-fc2=8192
+bs=10   #バッチサイズ　一回のデータ入力回数
+
+fc1=256
+fc2=256
+
+choice_parts=[0,1,2]
+delete_parts=[3,4,5]
 #パラメータここまで
 #----------------------------------------------------------------------------------
 
@@ -72,7 +68,7 @@ data_cols=(7+2)*6       #csvの列数
 cap_cols=7*6            #7DoFdataのみのデータの列数
 data_n=int(all_data_frames/data_frames)  #切り分けた後のdataの数(重ね合わせなし)
 
-learn_n=int(data_n*0.3)  #１モーションの学習のデータ数 3割を学習に
+learn_n=int(data_n*0.8)  #１モーションの学習のデータ数 3割を学習に
 test_n=int(data_n-learn_n) #１モーションのテストのデータ数   7割をテストに
 print(data_n,learn_n,test_n)
 
@@ -97,6 +93,20 @@ for i in range(len(motions)):
     all_cap_data[i]=np.delete(all_data[i],[7,8,16,17,25,26,34,35,43,44,52,53],1)
 #all_dataからtimestampとdevIDを消去する->all_cap_data
 
+#ここでデバイス選択を行う
+cap_cols=len(choice_parts*7)
+all_cap_choice_data=np.zeros((len(motions),all_data_frames,cap_cols))
+
+delete_list=[]
+for i in delete_parts:
+    delete_list.extend(range(i*7,i*7+7))
+print("delete cols = ",delete_list)
+
+for i in range(len(motions)):
+    all_cap_choice_data[i]=np.delete(all_cap_data[i],delete_list,1)
+if len(delete_parts) == 0:
+    all_cap_choice_data=all_cap_data
+
 np_data=np.zeros((learn_n*len(motions),data_frames,cap_cols))
 np_data_label=np.zeros(learn_n*len(motions))
 np_Tdata=np.zeros((test_n*len(motions),data_frames,cap_cols))
@@ -106,11 +116,11 @@ print('np_data_shape=',np_data.shape)
 
 for i in range(len(motions)):
     for f in range(learn_n):
-        np_data[i*learn_n+f]=all_cap_data[i][f:f+data_frames]
+        np_data[i*learn_n+f]=all_cap_choice_data[i][f:f+data_frames]
 
 for i in range(len(motions)):
     for f in range(test_n):
-        np_Tdata[i*test_n+f]=all_cap_data[i][f+learn_n:f+data_frames+learn_n]
+        np_Tdata[i*test_n+f]=all_cap_choice_data[i][f+learn_n:f+data_frames+learn_n]
 
 #ラベルセット
 for i in range(len(motions)):
@@ -118,32 +128,14 @@ for i in range(len(motions)):
     np_Tdata_label[test_n*i:test_n*(i+1)]=i
 
 
-#choiceモード(一部をテスト)は一時無効化
-'''
-if choice_mode==1:
-    choice_test_n=data_n-int(all_data_frames/data_frames*0.3)
-    np_choice_Tdata=np.zeros((choice_test_n*len(choice_test_motions),data_frames,data_cols))
-    np_choice_Tdata_label=np.zeros(choice_test_n*len(choice_test_motions))
-    print(choice_test_n,test_n,data_n,learn_n)
-    for i in range(len(choice_test_motions)):
-        choice_i=motions.index(choice_test_motions[i])
-        np_choice_Tdata[i*test_n:(i+1)*test_n]=np_Tdata[choice_i*test_n:(choice_i+1)*test_n]
-        np_choice_Tdata_label[i*choice_test_n:(i+1)*choice_test_n]=choice_i
-'''
 
 
 
 #numpy->torch
 t_data = torch.from_numpy(np_data)
 t_data_label = torch.from_numpy(np_data_label)
-if choice_mode==0:
-    t_Tdata = torch.from_numpy(np_Tdata)
-    t_Tdata_label = torch.from_numpy(np_Tdata_label)
-'''
-else:
-    t_Tdata = torch.from_numpy(np_choice_Tdata)
-    t_Tdata_label = torch.from_numpy(np_choice_Tdata_label)
-'''
+t_Tdata = torch.from_numpy(np_Tdata)
+t_Tdata_label = torch.from_numpy(np_Tdata_label)
 
 class dataset_class(Dataset):
     def __init__(self,data,labels, transform=None):
@@ -162,8 +154,8 @@ class dataset_class(Dataset):
 # データ読み込みの仕組み
 dsL = dataset_class(t_data,t_data_label)
 dsT = dataset_class(t_Tdata,t_Tdata_label)
-dlL = DataLoader(dsL, batch_size=10, shuffle=True)
-dlT = DataLoader(dsT, batch_size=10, shuffle=False)
+dlL = DataLoader(dsL, batch_size= bs, shuffle=True)
+dlT = DataLoader(dsT, batch_size= bs, shuffle=False)
 print(f'学習データ数: {len(dsL)}  テストデータ数: {len(dsT)}')
 
 
@@ -206,6 +198,21 @@ def evaluate(model, lossFunc, dl):
         ncorrect += (Y.argmax(dim=1) == lab).sum().item()  # 正解数
 
     return loss_sum/n, ncorrect/n
+
+def evaluate_test(model, dl, motions_len):
+    chart=np.zeros([motions_len,motions_len])
+    #print("chart_size",chart.shape)
+    for j, (X, lab) in enumerate(dl):
+        lab=lab.long()
+        X, lab = X.to(device), lab.to(device)
+        X = X.float()  # 入力データをFloat型に変換
+        Y = model(X)           # 一つのバッチ X を入力して出力 Y を計算
+
+        for i in range(len(lab)):
+            predicted = Y[i].argmax().item()
+            actual = lab[i].item()
+            chart[predicted][actual]+=1
+    return chart
 
 ##### 学習結果の表示用関数
 # 学習曲線の表示
@@ -286,10 +293,19 @@ for t in range(1, nepoch+1):
     lossT, rateT = evaluate(net, loss_func, dlT)
     results.append([t, lossL, lossT, rateL, rateT])
     if(t%10==0):
-        print(f'{t}   {lossL:.5f}   {lossT:.5f}   {rateL:.4f}   {rateT:.4f}')
+        print(f'{t:3d}   {lossL:.6f}   {lossT:.6f}   {rateL:.5f}   {rateT:.5f}')
+
+#print(torch.flatten(dlT).shape)
+chart=evaluate_test(net,dlT,len(motions))
+print(chart)
 printdata([fc1,fc2],"1111_15motions")
+
+
+
 if model_save==0:
     exit(0)
+
+
 
 torch.save(net.state_dict(),'rawlearn.path')
 print('model saved')
