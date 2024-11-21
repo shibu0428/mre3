@@ -290,7 +290,7 @@ for t in range(1, nepoch+1):
     if(t%10==0):
         print(f'{t:3d}   {lossL:.6f}   {lossT:.6f}   {rateL:.5f}   {rateT:.5f}')
 
-chart=evaluate_test(net,dlL,len(motions))
+chart=evaluate_test(net,dlT,len(motions))
 printdata([fc1,fc2],"1111_15motions")
 
 
