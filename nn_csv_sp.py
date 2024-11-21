@@ -56,11 +56,14 @@ all_data_frames=1800    #元データの読み取る最大フレーム数
 
 bs=10   #バッチサイズ　一回のデータ入力回数
 
-fc1=256
-fc2=256
+fc1=2048
+fc2=2048
 
-choice_parts=[0,1,2]
-delete_parts=[3,4,5]
+# 学習の繰り返し回数
+nepoch = 500
+
+choice_parts=[0]
+delete_parts=[1,2,3,4,5]
 #パラメータここまで
 #----------------------------------------------------------------------------------
 
@@ -228,7 +231,7 @@ def printdata(m_size,subtitle):
   ax[1].plot(data[:, 0], data[:, 3], '.-', label='training data')
   ax[1].plot(data[:, 0], data[:, 4], '.-', label='test data')
   ax[1].axhline(1.0, color='gray')
-  ax[1].set_ylim(0.35, 1.01)
+  ax[1].set_ylim(0, 1.01)
   ax[1].legend()
   ax[1].set_title(f'accuracy')
   fig.suptitle('modelSize'+str(m_size)+str(subtitle))
@@ -270,6 +273,31 @@ class MLP4(nn.Module):
         return X
 
 
+def calculate_f1_score(chart):
+    motions_len = chart.shape[0]
+    f1_scores = np.zeros(motions_len)
+    
+    for i in range(motions_len):
+        # True Positives, False Positives, and False Negatives
+        tp = chart[i, i]  # True Positives
+        fp = np.sum(chart[i, :]) - tp  # False Positives
+        fn = np.sum(chart[:, i]) - tp  # False Negatives
+        
+        # Precision and Recall
+        precision = tp / (tp + fp) if (tp + fp) > 0 else 0
+        recall = tp / (tp + fn) if (tp + fn) > 0 else 0
+        
+        # F1 Score
+        if precision + recall > 0:
+            f1_scores[i] = 2 * (precision * recall) / (precision + recall)
+        else:
+            f1_scores[i] = 0
+
+    # 全体の F1スコアの平均
+    mean_f1_score = np.mean(f1_scores)
+    
+    return f1_scores, mean_f1_score
+
 # ネットワークモデル
 
 net = MLP4(data_frames*cap_cols,fc1,fc2, len(motions)).to(device)
@@ -282,8 +310,7 @@ loss_func = nn.CrossEntropyLoss(reduction='sum')
 # パラメータ最適化器
 optimizer = torch.optim.Adam(net.parameters(), lr=1e-5)
 
-# 学習の繰り返し回数
-nepoch = 200
+
 
 # 学習
 results = []
@@ -298,6 +325,11 @@ for t in range(1, nepoch+1):
 #print(torch.flatten(dlT).shape)
 chart=evaluate_test(net,dlT,len(motions))
 print(chart)
+
+f1_scores, mean_f1_score = calculate_f1_score(chart)
+print("F1 Scores per class:", f1_scores)
+print("Mean F1 Score:", mean_f1_score)
+
 printdata([fc1,fc2],"1111_15motions")
 
 
