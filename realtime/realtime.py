@@ -3,85 +3,59 @@ import time
 import struct
 import numpy as np
 
-#torch関連の読み込み
+# torch関連の読み込み
 import torch
 import torch.nn as nn
-import torchsummary
 import torch.nn.functional as F  # ソフトマックス用
 
+# UDP設定
 host = ''
 port = 5002
-
-
 udp_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 
-#my home
-#udp_socket.bind(("192.168.10.110", 5002))  # IPアドレスを指定してバインド
+# ホスト設定 (ローカル環境またはリモート環境に応じて設定)
+# udp_socket.bind(("192.168.10.110", 5002))  # My home
+udp_socket.bind(("133.83.82.105", 5002))  # Ryukoku
 
-#ryukoku
-udp_socket.bind(("133.83.82.105", 5002))
+# 定数設定
+nframes = 10  # フレーム数
+parts = 6  # 部位の数
+dof = 7  # Degree of Freedom (自由度)
+model_path = '../nn/rawlearn.path'
+fc_1, fc_2 = 512, 512
+choice_parts = [0, 1, 2]  # 選択する部位のインデックス
+confidence_threshold = 75  # 確信度の閾値 (%)
+temperature = 1.2  # 温度スケーリングのパラメータ
 
-nframes=20
-parts=6
-dof=7
-
-model_path='../nn/rawlearn.path'
-fc_1=1024
-fc_2=1024
-
-
-choice_parts=[0,1,2]
-delete_parts=[]
-
-#data=[Nframe][6parts][7dof]
-in_data=np.empty((nframes,parts*dof))
-choice_in_data=np.empty((nframes,len(choice_parts)*dof))
-#最初のnframeまでは前側のデータが足りないため
-#データがそろうまではmodel読み込みをスキップ
-flag=0
-minframe=50
-
-motions=[
-    "freeze",
+# モーションラベル (学習時のクラス定義に揃える)
+motions = [
     "vslash2hand",
     "vslashleft",
-    "hslash2hand",
     "hslashleft",
-    "block",
-    "bowcharge",
-    "bowset",
-    "bowshot",
     "shake2hand",
     "shakeright",
-    "shakeleft",
-    "lasso2hand",
-    "lassoright",
-    "lassoleft",
+    "shakeleft"
 ]
 
+# データバッファを初期化
+in_data = np.empty((nframes, parts * dof))
+choice_in_data = np.empty((nframes, len(choice_parts) * dof))
 
-#学習した時のclass定義と揃える
+# NNモデル定義 (学習時と同じ構造)
 class MLP4(nn.Module):
-
-    # コンストラクタ． D: 入力次元数， H1, H2: 隠れ層ニューロン数， K: クラス数
-    def __init__(self, D, H1, H2,K):
+    def __init__(self, D, H1, H2, K):
         super(MLP4, self).__init__()
-        # 4次元テンソルで与えられる入力を2次元にする変換
         self.flatten = nn.Flatten()
-        # 入力 => 隠れ層1
         self.fc1 = nn.Sequential(
-            nn.Linear(D, H1), nn.Sigmoid()
+            nn.Linear(D, H1),
+            nn.Sigmoid()
         )
-        # 隠れ層1から隠れ層2へ
         self.fc2 = nn.Sequential(
-            nn.Linear(H1,H2), nn.Sigmoid()
+            nn.Linear(H1, H2),
+            nn.Sigmoid()
         )
+        self.fc3 = nn.Linear(H2, K)
 
-        # 隠れ層 => 出力層
-        self.fc3 = nn.Linear(H2, K) # 出力層には活性化関数を指定しない
-
-
-        # モデルの出力を計算するメソッド
     def forward(self, X):
         X = self.flatten(X)
         X = self.fc1(X)
@@ -89,64 +63,59 @@ class MLP4(nn.Module):
         X = self.fc3(X)
         return X
 
-model = MLP4(nframes*parts*dof,fc_1,fc_2, len(motions))
-#モデルを読み込む
+# モデルの読み込み
+model = MLP4(nframes * len(choice_parts) * dof, fc_1, fc_2, len(motions))
 model.load_state_dict(torch.load(model_path))
 print(f"UDP 受信開始。ホスト: {host}, ポート: {port}")
-n=0
-fr=0
 
-
-for tm in range(3):
-    print(3-tm)
+# 処理開始前のカウントダウン
+for tm in range(3, 0, -1):
+    print(tm)
     time.sleep(1)
 print("start")
 
-nframe=0
+# メインループ
+nframe = 0
 while True:
     try:
-        data, addr = udp_socket.recvfrom(4096)  # データを受信
-        
+        # データを受信
+        data, addr = udp_socket.recvfrom(4096)
 
-        #データがそろっていないときの処理
-        if nframe<nframes:
-            for i in range(6):
-                tupledata=struct.unpack('<fffffff', data[i*40:i*40+28])
-                for j in range(7):
-                    in_data[nframe][i*7+j]=tupledata[j]
-            j=0
-            for i in choice_parts:
-                choice_in_data[nframe][j*dof:(j+1)*dof]=in_data[nframe][i:(i+1)*dof]
-                j+=1
-            nframe+=1
+        # 初期フレームが揃っていない場合
+        if nframe < nframes:
+            for i in range(parts):
+                tupledata = struct.unpack('<fffffff', data[i * 40:i * 40 + 28])
+                for j in range(dof):
+                    in_data[nframe, i * dof + j] = tupledata[j]
+            for j, part in enumerate(choice_parts):
+                choice_in_data[nframe, j * dof:(j + 1) * dof] = in_data[nframe, part * dof:(part + 1) * dof]
+            nframe += 1
             continue
-            
-        #np_dataを更新して配列の最後frameを開ける
-        #データをunpackする
-        in_data[:-1] = in_data[1]
-        for i in range(6):
-            tupledata=struct.unpack('<fffffff', data[i*40:i*40+28])
-            for j in range(7):
-                in_data[-1][i*7+j]=tupledata[j]
-        j=0
-        for i in choice_parts:
-            choice_in_data[nframe][j*dof:(j+1)*dof]=in_data[nframe][i:(i+1)*dof]
-            j+=1
-        nframe+=1
 
-        #nnに入力していく
-        t_in_data = torch.from_numpy(choice_in_data).float()
-        t_in_data = t_in_data.view(1, -1)
+        # データをシフトして最新フレームを格納
+        in_data[:-1] = in_data[1:]
+        for i in range(parts):
+            tupledata = struct.unpack('<fffffff', data[i * 40:i * 40 + 28])
+            in_data[-1, i * dof:(i + 1) * dof] = tupledata
+
+        # 選択した部位データの更新
+        for j, part in enumerate(choice_parts):
+            choice_in_data[-1, j * dof:(j + 1) * dof] = in_data[-1, part * dof:(part + 1) * dof]
+
+        # モデル入力の整形
+        t_in_data = torch.from_numpy(choice_in_data).float().view(1, -1)
+
+        # 推論
         Y = model(t_in_data)
-        probs = F.softmax(Y, dim=1)  # ソフトマックスで確率に変換
-        predicted_class = Y.argmax(dim=1).item()  # 最も確率の高いクラス
-        confidence = probs[0, predicted_class].item()  # 確信度（確率）
+        probs = F.softmax(Y / temperature, dim=1)  # 温度スケーリング適用
+        predicted_class = probs.argmax(dim=1).item()
+        confidence = probs[0, predicted_class].item() * 100  # 確率をパーセント表記
 
-        print(f"予測クラス: {motions[predicted_class]} (確信度: {confidence * 100:.2f}%)")
+        # 確信度が閾値を超えた場合のみ出力
+        if confidence > confidence_threshold:
+            print(f"予測クラス: {motions[predicted_class]} (確信度: {confidence:.2f}%)")
 
-                    
-            
     except OSError as e:
-        # エラーが発生した場合は表示
+        # エラーが発生した場合
         print(f"エラー: {e}")
         continue

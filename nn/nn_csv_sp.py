@@ -60,10 +60,10 @@ fc1=512
 fc2=512
 
 # 学習の繰り返し回数
-nepoch = 10
+nepoch = 30
 
-choice_parts=[0,1,2]
-delete_parts=[3,4,5]
+choice_parts=[0]
+delete_parts=[1,2,3,4,5]
 #パラメータここまで
 #----------------------------------------------------------------------------------
 
@@ -332,6 +332,33 @@ for t in range(1, nepoch+1):
 chart=evaluate_test(net,dlT,len(motions))
 print(chart)
 printdata([fc1,fc2],"1111_15motions")
+
+
+from sklearn.metrics import f1_score
+
+# F1スコアを計算する関数
+def calculate_f1(model, dl, motions_len):
+    all_true_labels = []
+    all_pred_labels = []
+    
+    for X, lab in dl:
+        lab = lab.long()
+        X, lab = X.to(device), lab.to(device)
+        X = X.float()
+        Y = model(X)
+        preds = torch.argmax(Y, dim=1)
+        
+        # ラベルをリストに追加
+        all_true_labels.extend(lab.cpu().numpy())
+        all_pred_labels.extend(preds.cpu().numpy())
+    
+    # F1スコアを計算
+    f1 = f1_score(all_true_labels, all_pred_labels, average='weighted')
+    return f1
+
+# テストデータに対するF1スコアを計算して表示
+f1 = calculate_f1(net, dlT, len(motions))
+print(f"F1 Score (weighted): {f1:.4f}")
 
 
 
