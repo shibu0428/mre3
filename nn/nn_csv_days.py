@@ -66,8 +66,8 @@ choice_parts=[0,1,2]
 delete_parts=[3,4,5]
 
 # パラメータ: ノイズの強さと生成回数を設定
-noise_level = 2.5  # ノイズの強さ
-noise_repetitions = 5  # ノイズ付きデータを生成する回数
+noise_level = 0  # ノイズの強さ
+noise_repetitions = 0  # ノイズ付きデータを生成する回数
 
 # 学習データとテストデータを日付で分けるかどうか
 split_by_date = False#True  # Trueなら日付で分ける、Falseなら混ぜる

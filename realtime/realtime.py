@@ -114,6 +114,7 @@ while True:
         # 確信度が閾値を超えた場合のみ出力
         if confidence > confidence_threshold:
             print(f"予測クラス: {motions[predicted_class]} (確信度: {confidence:.2f}%)")
+            
 
     except OSError as e:
         # エラーが発生した場合
