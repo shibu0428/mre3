@@ -8,7 +8,7 @@ udp_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 udp_socket.bind(("133.83.82.105", 5002))
 
 filename=input("ファイル名")
-filename='1121_sit_'+filename
+filename='1128_sit_'+filename
 print("Waiting for UDP data")
 nframe=0
 dataframe=2000
@@ -18,9 +18,11 @@ maxframe=dataframe+minframe
 
 with open(filename+'.csv',mode='a') as f:
     while True:
+        
         data, addr = udp_socket.recvfrom(1024)  # データを受信
         nframe+=1
-
+        if nframe==1:
+            print("start")
         #開始のフレームより早いなら処理しない
         if nframe<minframe:
             continue

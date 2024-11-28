@@ -1,6 +1,5 @@
-import numpy as np
-
-motion_len=15
-b=np.zeros([motion_len,motion_len])
-b[2][3]=1
-print(b)
+import time
+print("aaa")
+for i in range(10):
+    print('\rNo, %d' % i, end='')
+    time.sleep(0.5)

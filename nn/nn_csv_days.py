@@ -24,7 +24,7 @@ from sklearn.model_selection import train_test_split
 # パラメータここから
 dataset_path="../dataset/"
 #dataset_days="1121"
-datasetdays=["1111","1121"]
+datasetdays=["1128"]
 
 positions={
     "sit",
@@ -38,20 +38,16 @@ motions=[
     "vslashleft",
     #"hslash2hand",
     "hslashleft",
-    #"block",
-    #"bowcharge",
-    #"bowset",
-    #"bowshot",
-    "shake2hand",
-    "shakeright",
-    "shakeleft",
     #"lasso2hand",
     #"lassoright",
     #"lassoleft",
+    "walkslow",
+    "walkfast",
+    #"clap",
 ]
 
 model_save=1        # モデルを保存するかどうか 1なら保存
-data_frames=10      # 学習1dataあたりのフレーム数
+data_frames=2      # 学習1dataあたりのフレーム数
 all_data_frames=1800+data_frames  # 元データの読み取る最大フレーム数
 
 bs=20   # バッチサイズ
@@ -60,7 +56,7 @@ fc1=512
 fc2=512
 
 # 学習の繰り返し回数
-nepoch = 8
+nepoch = 20
 
 choice_parts=[0,1,2]
 delete_parts=[3,4,5]

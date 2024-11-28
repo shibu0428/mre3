@@ -8,6 +8,9 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F  # ソフトマックス用
 
+#グラフ用
+import matplotlib.pyplot as plt
+
 # UDP設定
 host = ''
 port = 5002
@@ -28,13 +31,19 @@ confidence_threshold = 75  # 確信度の閾値 (%)
 temperature = 1.2  # 温度スケーリングのパラメータ
 
 # モーションラベル (学習時のクラス定義に揃える)
-motions = [
+motions=[
+    #"freeze",
     "vslash2hand",
     "vslashleft",
+    #"hslash2hand",
     "hslashleft",
-    "shake2hand",
-    "shakeright",
-    "shakeleft"
+    #"lasso2hand",
+    "lassoright",
+    "lassoleft",
+    "walkslow",
+    "walkfast",
+    #a
+    # "clap",
 ]
 
 # データバッファを初期化
@@ -76,6 +85,13 @@ print("start")
 
 # メインループ
 nframe = 0
+freeze_flag=0   #閾値以下を識別した時に連続した場合のフラグ
+freeze_time=0   #flagがonの時のフレーム回数を表示
+
+Y_hist=[]
+probs_hist=[]
+confidence_hist=[]
+
 while True:
     try:
         # データを受信
@@ -110,12 +126,57 @@ while True:
         probs = F.softmax(Y / temperature, dim=1)  # 温度スケーリング適用
         predicted_class = probs.argmax(dim=1).item()
         confidence = probs[0, predicted_class].item() * 100  # 確率をパーセント表記
+        
+        Y_hist.append(Y[0].detach().cpu().numpy())
+        Y_hist.append(Y[0].detach().cpu().numpy())
 
         # 確信度が閾値を超えた場合のみ出力
         if confidence > confidence_threshold:
             print(f"予測クラス: {motions[predicted_class]} (確信度: {confidence:.2f}%)")
+            freeze_flag=0
+            freeze_time=0
+        elif freeze_flag == 0:   #freezeが連続ではない
+            freeze_flag = 1
+            freeze_time = 1
+            print(print('\rfreeze frame=%d' %freeze_time, end=''))
+        else:
+            freeze_time+=1
+            print(f'\r予測クラス: {motions[predicted_class]} (確信度: {confidence:.2f}%)freeze frame={freeze_time}', end='')
+            if freeze_time>400:
+                break
+        
+
 
     except OSError as e:
         # エラーが発生した場合
         print(f"エラー: {e}")
         continue
+# UDPソケットを閉じる
+udp_socket.close()
+
+#ループ処理が終わったら各グラフを表示
+g_title=input("Yの履歴グラフのタイトルを入力してください")
+
+Y_np_hist=np.array(Y_hist)
+# グラフをプロット
+plt.figure()
+for idx, motion in enumerate(motions):
+    plt.plot(Y_np_hist[:, idx], label=motion)
+plt.xlabel('フレーム数')
+plt.ylabel('モデルの出力')
+plt.title(g_title)
+plt.legend()
+plt.show()
+
+g_title=input("スケーリング後のグラフのタイトルを入力してください")
+
+probs_np_hist=np.array(probs_hist)
+# グラフをプロット
+plt.figure()
+for idx, motion in enumerate(motions):
+    plt.plot(probs_np_hist[:, idx], label=motion)
+plt.xlabel('フレーム数')
+plt.ylabel('モデルの出力')
+plt.title(g_title)
+plt.legend()
+plt.show()
