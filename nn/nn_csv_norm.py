@@ -2,20 +2,18 @@
 import numpy as np
 import matplotlib.pyplot as plt
 import pandas as pd
-import seaborn
-seaborn.set()
 from torch.utils.data import Dataset
 
 # PyTorch 関係のほげ
 import torch
 import torch.nn as nn
 from torch.utils.data import DataLoader
-from torchvision.transforms import ToTensor
-import torchsummary
-import csv
+import seaborn as sns
+import seaborn
+seaborn.set()
 
 import pandas as pd
-import seaborn as sns
+
 
 from sklearn.metrics import f1_score
 from sklearn.model_selection import train_test_split
@@ -23,8 +21,7 @@ from sklearn.model_selection import train_test_split
 #---------------------------------------------------
 # パラメータここから
 dataset_path="../dataset/"
-#dataset_days="1121"
-datasetdays=["1111","1121","1128"]
+datasetdays=["1128"]
 
 positions={
     "sit",
@@ -33,17 +30,11 @@ positions={
 position="sit"
 
 motions=[
-    "freeze",
     "vslash2hand",
     "vslashleft",
-    #"hslash2hand",
     "hslashleft",
-    #"lasso2hand",
-    #"lassoright",
-    #"lassoleft",
-    #"walkslow",
-    #"walkfast",
-    #"clap",
+    "walkslow",
+    "walkfast",
 ]
 
 model_save=1        # モデルを保存するかどうか 1なら保存
@@ -56,17 +47,17 @@ fc1=512
 fc2=512
 
 # 学習の繰り返し回数
-nepoch = 3
+nepoch = 8
 
 choice_parts=[1,2]
 delete_parts=[0,3,4,5]
 
 # パラメータ: ノイズの強さと生成回数を設定
-noise_level = 0.05  # ノイズの強さ
-noise_repetitions = 7  # ノイズ付きデータを生成する回数
+noise_level = 0.07  # ノイズの強さ
+noise_repetitions = 3  # ノイズ付きデータを生成する回数
 
 # 学習データとテストデータを日付で分けるかどうか
-split_by_date = True#True  # Trueなら日付で分ける、Falseなら混ぜる
+split_by_date = False
 
 # パラメータここまで
 #----------------------------------------------------------------------------------
@@ -99,17 +90,32 @@ for date_idx, date in enumerate(datasetdays):
         delete_list=[]
         for i in delete_parts:
             delete_list.extend(range(i*7, i*7+7))
-        #print("delete cols = ", delete_list)
         cap_choice_data = np.delete(cap_data, delete_list, 1)
         data_list.append(cap_choice_data)
         labels_list.append(motion_idx)
         date_labels_list.append(date_idx)
 
-# データを分割
+# === 加速度データの正規化関数を追加 ===
+def normalize_acceleration(data, indices):
+    """
+    データ内の加速度部分を正規化する関数
+    :param data: numpy 配列 (samples, frames, features)
+    :param indices: 加速度部分の列インデックス
+    :return: 正規化されたデータ、加速度の平均と標準偏差
+    """
+    accel_data = data[:, :, indices].reshape(-1, len(indices))  # 加速度部分を抽出
+    mean = np.mean(accel_data, axis=0)
+    std = np.std(accel_data, axis=0)
+    std[std == 0] = 1  # 標準偏差がゼロの場合に1を設定（安全対策）
+
+    normalized_accel_data = (accel_data - mean) / std
+    data[:, :, indices] = normalized_accel_data.reshape(data[:, :, indices].shape)
+    return data, mean, std
+
+# === データ分割後に正規化を適用 ===
 if split_by_date:
-    # 学習データとテストデータを日付で分ける場合
-    train_dates = ["1111","1121"]
-    test_dates = ["1128"]
+    train_dates = ["1111"]
+    test_dates = ["1121"]
     train_date_indices = [date_to_index[date] for date in train_dates]
     test_date_indices = [date_to_index[date] for date in test_dates]
 
@@ -141,7 +147,6 @@ if split_by_date:
     np_Tdata_label = np.array(test_labels)
 
 else:
-    # 学習データとテストデータを混ぜる場合
     data_sequences_list = []
     data_labels_list = []
 
@@ -161,31 +166,41 @@ else:
     np_data, np_Tdata, np_data_label, np_Tdata_label = train_test_split(
         data_sequences_array, data_labels_array, test_size=1 - learn_par, shuffle=True, stratify=data_labels_array)
 
-# === ここからノイズ付加を追加 ===
-def add_noise_multiple(data, noise_level=0.01, repetitions=1):
-    """
-    ノイズを付加したデータを指定回数生成し、元データに結合する。
-    :param data: 元データ (numpy array)
-    :param noise_level: ノイズの強さ
-    :param repetitions: ノイズ付きデータの生成回数
-    :return: 元データとノイズ付きデータを結合した numpy array
-    """
-    augmented_data = [data]  # 元データを含むリスト
+    # 加速度列インデックスを設定（ax, ay, az は部位ごとの最初の3列）
+    accel_indices = []
+    for part in choice_parts:
+        accel_indices.extend([part * 7, part * 7 + 1, part * 7 + 2])
+
+    # 学習データを正規化
+    np_data_normalized, accel_mean, accel_std = normalize_acceleration(np_data, accel_indices)
+
+    # テストデータを正規化
+    np_Tdata_normalized, _, _ = normalize_acceleration(np_Tdata, accel_indices)
+
+    # 正規化パラメータを出力
+    print("Acceleration normalization parameters:")
+    # 正規化パラメータをリスト形式でカンマ区切りで出力
+    print("Mean: [" + ", ".join(map(str, accel_mean)) + "]")
+    print("Standard Deviation: [" + ", ".join(map(str, accel_std)) + "]")
+
+
+# === ノイズを追加して正規化済みデータを拡張 ===
+def add_noise(data, noise_level, repetitions):
+    augmented_data = [data]
     for _ in range(repetitions):
         noise = np.random.normal(0, noise_level, data.shape)
         augmented_data.append(data + noise)
     return np.concatenate(augmented_data, axis=0)
 
-# ノイズを付加したデータを生成して、元データに結合
-np_data_augmented = add_noise_multiple(np_data, noise_level=noise_level, repetitions=noise_repetitions)
+np_data_augmented = add_noise(np_data_normalized, noise_level, noise_repetitions)
 
-# ノイズ付きデータのラベルは元データと同じものを繰り返す
+# ラベルも拡張
 np_data_label_augmented = np.tile(np_data_label, noise_repetitions + 1)
 
-# numpy -> torch
+# 正規化済みデータをtorchテンソルに変換
 t_data = torch.from_numpy(np_data_augmented)
 t_data_label = torch.from_numpy(np_data_label_augmented)
-t_Tdata = torch.from_numpy(np_Tdata)
+t_Tdata = torch.from_numpy(np_Tdata_normalized)
 t_Tdata_label = torch.from_numpy(np_Tdata_label)
 
 class dataset_class(Dataset):
@@ -199,12 +214,12 @@ class dataset_class(Dataset):
     def __len__(self):
         return len(self.labels)
 
-# データ読み込みの仕組み
 dsL = dataset_class(t_data, t_data_label)
 dsT = dataset_class(t_Tdata, t_Tdata_label)
-dlL = DataLoader(dsL, batch_size= bs, shuffle=True)
-dlT = DataLoader(dsT, batch_size= bs, shuffle=False)
+dlL = DataLoader(dsL, batch_size=bs, shuffle=True)
+dlT = DataLoader(dsT, batch_size=bs, shuffle=False)
 print(f'学習データ数: {len(dsL)}  テストデータ数: {len(dsT)}')
+
 
 def display_confusion_matrix(chart, class_names):
     # pandas DataFrame に変換
@@ -221,6 +236,10 @@ def display_confusion_matrix(chart, class_names):
     plt.ylabel('Actual')
     plt.title('Confusion Matrix Heatmap')
     plt.show()
+
+
+
+
 
 
 # 1epoch の学習を行う関数
@@ -269,7 +288,7 @@ def evaluate_test(model, dl, motions_len):
         for i in range(len(lab)):
             predicted = Y[i].argmax().item()
             actual = lab[i].item()
-            chart[predicted][actual] += 1
+            chart[actual][predicted] += 1
     return chart
 
 # 学習結果の表示用関数
@@ -332,11 +351,12 @@ for t in range(1, nepoch + 1):
     lossL, rateL = train(net, loss_func, optimizer, dlL)
     lossT, rateT = evaluate(net, loss_func, dlT)
     results.append([t, lossL, lossT, rateL, rateT])
-    if (t % 10 == 0):
+    if (t % 5 == 0):
         print(f'{t:3d}   {lossL:.6f}   {lossT:.6f}   {rateL:.5f}   {rateT:.5f}')
 
 chart = evaluate_test(net, dlT, len(motions))
 display_confusion_matrix(chart, motions)
+
 printdata([fc1, fc2], "1111_1121_15motions")
 
 # F1スコアを計算する関数
