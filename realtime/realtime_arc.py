@@ -9,6 +9,9 @@ import torch.nn as nn
 import torchsummary
 import torch.nn.functional as F  # ソフトマックス用
 
+#グラフ用
+import matplotlib.pyplot as plt
+
 host = ''
 port = 5002
 
@@ -16,10 +19,10 @@ port = 5002
 udp_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 
 #my home
-#udp_socket.bind(("192.168.10.110", 5002))  # IPアドレスを指定してバインド
+udp_socket.bind(("192.168.10.110", 5002))  # IPアドレスを指定してバインド
 
 #ryukoku
-udp_socket.bind(("133.83.82.105", 5002))
+#udp_socket.bind(("133.83.82.105", 5002))
 
 nframes=10
 parts=6
@@ -30,7 +33,7 @@ fc_1=512
 fc_2=512
 
 
-choice_parts=[0,1,2]
+choice_parts=[0,1,2,3,4,5]
 
 #data=[Nframe][6parts][7dof]
 in_data=np.empty((nframes,parts*dof))
@@ -41,21 +44,14 @@ flag=0
 minframe=50
 
 motions=[
-    #"freeze",
+    "freeze",
     "vslash2hand",
     "vslashleft",
-    #"hslash2hand",
     "hslashleft",
-    #"block",
-    #"bowcharge",
-    #"bowset",
-    #"bowshot",
-    "shake2hand",
-    "shakeright",
-    "shakeleft",
-    #"lasso2hand",
-    #"lassoright",
-    #"lassoleft",
+    "lassoright",
+    "walkslow",
+    "clap",
+    "punchright"
 ]
 
 
@@ -101,6 +97,10 @@ for tm in range(3):
     time.sleep(1)
 print("start")
 
+Y_hist=[]
+probs_hist=[]
+confidence_hist=[]
+
 nframe=0
 while True:
     try:
@@ -113,25 +113,21 @@ while True:
                 tupledata=struct.unpack('<fffffff', data[i*40:i*40+28])
                 for j in range(7):
                     in_data[nframe][i*7+j]=tupledata[j]
-            j=0
-            for i in choice_parts:
-                choice_in_data[nframe][j*dof:(j+1)*dof]=in_data[nframe][i*dof:(i+1)*dof]
-                j+=1
             nframe+=1
             continue
             
         #np_dataを更新して配列の最後frameを開ける
         #データをunpackする
-        in_data[:-1] = in_data[1]
+        in_data = np.roll(in_data,-parts*dof)
         for i in range(6):
             tupledata=struct.unpack('<fffffff', data[i*40:i*40+28])
             for j in range(7):
-                in_data[-1][i*7+j]=tupledata[j]
-        j=0
-        for i in choice_parts:
-            choice_in_data[-1][j*dof:(j+1)*dof]=in_data[-1][i*dof:(i+1)*dof]
-            j+=1
+                in_data[nframes-1][i*7+j]=tupledata[j]
+        choice_in_data=in_data
         nframe+=1
+        #for i in range(nframes):
+            #print(in_data[i][0],end=',')
+        #print()
 
         #nnに入力していく
         t_in_data = torch.from_numpy(choice_in_data).float()
@@ -141,12 +137,38 @@ while True:
         predicted_class = Y.argmax(dim=1).item()  # 最も確率の高いクラス
         confidence = probs[0, predicted_class].item()  # 確信度（確率）
 
-        if confidence*100>75:
-            print(f"予測クラス: {motions[predicted_class]} (確信度: {confidence * 100:.2f}%)")
+        Y_hist.append(Y[0].detach().cpu().numpy())
+        probs_hist.append(probs[0].detach().cpu().numpy())
 
+        if confidence*100>0:
+            print(f"予測クラス: {motions[predicted_class]} (確信度: {confidence * 100:.2f}%)")
+            #print(in_data)
+
+        if nframe>1000:
+            break
                     
             
     except OSError as e:
         # エラーが発生した場合は表示
         print(f"エラー: {e}")
         continue
+
+
+
+# UDPソケットを閉じる
+udp_socket.close()
+
+#ループ処理が終わったら各グラフを表示
+g_title=input("Yの履歴グラフのタイトルを入力してください")
+
+Y_np_hist=np.array(Y_hist)
+# グラフをプロット
+plt.figure()
+for idx, motion in enumerate(motions):
+    plt.plot(Y_np_hist[:, idx], label=motion)
+plt.xlabel('フレーム数')
+plt.ylabel('モデルの出力')
+plt.title(g_title)
+plt.legend()
+plt.show()
+

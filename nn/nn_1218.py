@@ -16,6 +16,7 @@ import csv
 
 import pandas as pd
 import seaborn as sns
+sns.set()
 
 from sklearn.metrics import f1_score
 from sklearn.model_selection import train_test_split
@@ -24,31 +25,23 @@ from sklearn.model_selection import train_test_split
 # パラメータここから
 dataset_path="../dataset/"
 #dataset_days="1121"
-datasetdays=["1128"]
+datasetdays=["1","2","3","4"]
 
-positions={
-    "sit",
-    "sta",
-}
-position="sit"
 
 motions=[
-    #"freeze",
+    "freeze",
     "vslash2hand",
     "vslashleft",
-    #"hslash2hand",
     "hslashleft",
-    #"lasso2hand",
-    #"lassoright",
-    #"lassoleft",
+    "lassoright",
     "walkslow",
-    "walkfast",
-    #"clap",
+    "clap",
+    "punchright"
 ]
 
 model_save=1        # モデルを保存するかどうか 1なら保存
-data_frames=2      # 学習1dataあたりのフレーム数
-all_data_frames=1800+data_frames  # 元データの読み取る最大フレーム数
+data_frames=10      # 学習1dataあたりのフレーム数
+all_data_frames=960+data_frames  # 元データの読み取る最大フレーム数
 
 bs=20   # バッチサイズ
 
@@ -56,14 +49,14 @@ fc1=512
 fc2=512
 
 # 学習の繰り返し回数
-nepoch = 20
+nepoch = 7
 
-choice_parts=[0,1,2]
-delete_parts=[3,4,5]
+choice_parts=[0,1,2,3,4,5]
+delete_parts=[]
 
 # パラメータ: ノイズの強さと生成回数を設定
-noise_level = 0  # ノイズの強さ
-noise_repetitions = 0  # ノイズ付きデータを生成する回数
+noise_level = 0.05  # ノイズの強さ
+noise_repetitions = 1  # ノイズ付きデータを生成する回数
 
 # 学習データとテストデータを日付で分けるかどうか
 split_by_date = False#True  # Trueなら日付で分ける、Falseなら混ぜる
@@ -74,7 +67,7 @@ split_by_date = False#True  # Trueなら日付で分ける、Falseなら混ぜ�
 data_cols=(7+2)*6       # CSVの列数
 cap_cols=7*6            # 7DoFデータのみの列数
 
-learn_par=0.8
+learn_par=0.95
 
 # CUDAの準備
 device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
@@ -90,7 +83,7 @@ date_to_index = {date: idx for idx, date in enumerate(datasetdays)}
 
 for date_idx, date in enumerate(datasetdays):
     for motion_idx, motion in enumerate(motions):
-        filepath=dataset_path+date+"_"+position+"_"+motion+".csv"
+        filepath=dataset_path+date+motion+".csv"
         print(filepath)
         data = np.genfromtxt(filepath, delimiter=',', filling_values=0)[:all_data_frames, :data_cols]
         cap_data = np.delete(data, [7,8,16,17,25,26,34,35,43,44,52,53], 1)
@@ -108,8 +101,8 @@ for date_idx, date in enumerate(datasetdays):
 # データを分割
 if split_by_date:
     # 学習データとテストデータを日付で分ける場合
-    train_dates = ["1111"]
-    test_dates = ["1121"]
+    train_dates = ["1","2","3"]
+    test_dates = ["4"]
     train_date_indices = [date_to_index[date] for date in train_dates]
     test_date_indices = [date_to_index[date] for date in test_dates]
 
@@ -270,7 +263,7 @@ def evaluate_test(model, dl, motions_len):
             predicted = Y[i].argmax().item()
             actual = lab[i].item()
             chart[predicted][actual] += 1
-    return chart
+    return chart.T
 
 # 学習結果の表示用関数
 def printdata(m_size, subtitle):
@@ -332,10 +325,11 @@ for t in range(1, nepoch + 1):
     lossL, rateL = train(net, loss_func, optimizer, dlL)
     lossT, rateT = evaluate(net, loss_func, dlT)
     results.append([t, lossL, lossT, rateL, rateT])
-    if (t % 10 == 0):
+    if (t % 5 == 0):
         print(f'{t:3d}   {lossL:.6f}   {lossT:.6f}   {rateL:.5f}   {rateT:.5f}')
 
 chart = evaluate_test(net, dlT, len(motions))
+print(chart)
 display_confusion_matrix(chart, motions)
 printdata([fc1, fc2], "1111_1121_15motions")
 

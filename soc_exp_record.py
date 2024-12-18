@@ -4,15 +4,15 @@ import time
 
 # UDPの受信設定
 udp_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-#udp_socket.bind(("192.168.10.110", 5002))  # IPアドレスを指定してバインド
-udp_socket.bind(("133.83.82.105", 5002))
+udp_socket.bind(("192.168.10.110", 5002))  # IPアドレスを指定してバインド
+#udp_socket.bind(("133.83.82.105", 5002))
 
 filename=input("ファイル名")
-filename='1128_sit_'+filename
+filename='4'+filename
 print("Waiting for UDP data")
 nframe=0
-dataframe=2000
-minframe=300
+dataframe=1000
+minframe=200
 
 maxframe=dataframe+minframe
 

@@ -2,7 +2,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 filename=input("motion名を入力(datasetはデフォルトで入る)\n")
-filepath="./dataset/1128_sit_"+filename+".csv"
+filepath="./dataset/"+filename+".csv"
 all_data_frames=100
 data_cols=(7+2)*6
 
@@ -26,5 +26,5 @@ plt.ylabel("Y axis")
 plt.plot(cap_choice_data,label=labels)
 plt.legend()
 #plt.show()
-plt.savefig("./image/1128_plot/"+filename+"left.png")
+plt.savefig("./image/"+filename+".png")
 

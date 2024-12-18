@@ -24,7 +24,7 @@ from sklearn.model_selection import train_test_split
 # パラメータここから
 dataset_path="../dataset/"
 #dataset_days="1121"
-datasetdays=["1111","1121","1128"]
+datasetdays=["1128"]
 
 positions={
     "sit",
@@ -33,7 +33,7 @@ positions={
 position="sit"
 
 motions=[
-    "freeze",
+    #"freeze",
     "vslash2hand",
     "vslashleft",
     #"hslash2hand",
@@ -41,13 +41,13 @@ motions=[
     #"lasso2hand",
     #"lassoright",
     #"lassoleft",
-    #"walkslow",
-    #"walkfast",
+    "walkslow",
+    "walkfast",
     #"clap",
 ]
 
 model_save=1        # モデルを保存するかどうか 1なら保存
-data_frames=20      # 学習1dataあたりのフレーム数
+data_frames=2      # 学習1dataあたりのフレーム数
 all_data_frames=1800+data_frames  # 元データの読み取る最大フレーム数
 
 bs=20   # バッチサイズ
@@ -56,17 +56,17 @@ fc1=512
 fc2=512
 
 # 学習の繰り返し回数
-nepoch = 3
+nepoch = 40
 
-choice_parts=[1,2]
-delete_parts=[0,3,4,5]
+choice_parts=[0,1,2,3,4,5]
+delete_parts=[]
 
 # パラメータ: ノイズの強さと生成回数を設定
-noise_level = 0.05  # ノイズの強さ
-noise_repetitions = 7  # ノイズ付きデータを生成する回数
+noise_level = 0.03  # ノイズの強さ
+noise_repetitions = 1  # ノイズ付きデータを生成する回数
 
 # 学習データとテストデータを日付で分けるかどうか
-split_by_date = True#True  # Trueなら日付で分ける、Falseなら混ぜる
+split_by_date = False#True  # Trueなら日付で分ける、Falseなら混ぜる
 
 # パラメータここまで
 #----------------------------------------------------------------------------------
@@ -108,8 +108,8 @@ for date_idx, date in enumerate(datasetdays):
 # データを分割
 if split_by_date:
     # 学習データとテストデータを日付で分ける場合
-    train_dates = ["1111","1121"]
-    test_dates = ["1128"]
+    train_dates = ["1111"]
+    test_dates = ["1121"]
     train_date_indices = [date_to_index[date] for date in train_dates]
     test_date_indices = [date_to_index[date] for date in test_dates]
 
