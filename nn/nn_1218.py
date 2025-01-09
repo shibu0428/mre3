@@ -23,25 +23,29 @@ from sklearn.model_selection import train_test_split
 
 #---------------------------------------------------
 # パラメータここから
-dataset_path="../dataset/"
+dataset_path="../dataset_monhan_shibu/"
 #dataset_days="1121"
-datasetdays=["1","2","3","4"]
+datasetdays=["1","2"]
 
 
 motions=[
+    "vslash",
+    "hslash_underleft",
+    "hslash_underright",
+    "kick_leftleg",
+    "kick_rightleg",
+    "walk_front",
+    "walk_right",
+    "walk_left",
+    "tuki",
+    "noutou_kosi",
+    "noutou_senaka",
     "freeze",
-    "vslash2hand",
-    "vslashleft",
-    "hslashleft",
-    "lassoright",
-    "walkslow",
-    "clap",
-    "punchright"
 ]
 
 model_save=1        # モデルを保存するかどうか 1なら保存
 data_frames=10      # 学習1dataあたりのフレーム数
-all_data_frames=960+data_frames  # 元データの読み取る最大フレーム数
+all_data_frames=560+data_frames  # 元データの読み取る最大フレーム数
 
 bs=20   # バッチサイズ
 
@@ -49,7 +53,7 @@ fc1=512
 fc2=512
 
 # 学習の繰り返し回数
-nepoch = 7
+nepoch = 20
 
 choice_parts=[0,1,2,3,4,5]
 delete_parts=[]
@@ -83,7 +87,7 @@ date_to_index = {date: idx for idx, date in enumerate(datasetdays)}
 
 for date_idx, date in enumerate(datasetdays):
     for motion_idx, motion in enumerate(motions):
-        filepath=dataset_path+date+motion+".csv"
+        filepath=dataset_path+motion+date+".csv"
         print(filepath)
         data = np.genfromtxt(filepath, delimiter=',', filling_values=0)[:all_data_frames, :data_cols]
         cap_data = np.delete(data, [7,8,16,17,25,26,34,35,43,44,52,53], 1)

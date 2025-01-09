@@ -19,10 +19,10 @@ port = 5002
 udp_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 
 #my home
-udp_socket.bind(("192.168.10.110", 5002))  # IPアドレスを指定してバインド
+#udp_socket.bind(("192.168.10.110", 5002))  # IPアドレスを指定してバインド
 
 #ryukoku
-#udp_socket.bind(("133.83.82.105", 5002))
+udp_socket.bind(("133.83.82.105", 5002))
 
 nframes=10
 parts=6
@@ -44,14 +44,18 @@ flag=0
 minframe=50
 
 motions=[
+    "vslash",
+    "hslash_underleft",
+    "hslash_underright",
+    "kick_leftleg",
+    "kick_rightleg",
+    "walk_front",
+    "walk_right",
+    "walk_left",
+    "tuki",
+    "noutou_kosi",
+    "noutou_senaka",
     "freeze",
-    "vslash2hand",
-    "vslashleft",
-    "hslashleft",
-    "lassoright",
-    "walkslow",
-    "clap",
-    "punchright"
 ]
 
 
