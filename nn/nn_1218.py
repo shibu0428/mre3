@@ -33,27 +33,27 @@ motions=[
     "hslash_underleft",
     "hslash_underright",
     "kick_leftleg",
-    "kick_rightleg",
+    #"kick_rightleg",
     "walk_front",
-    "walk_right",
-    "walk_left",
+    #"walk_right",
+    #"walk_left",
     "tuki",
     "noutou_kosi",
     "noutou_senaka",
-    "freeze",
+    #"freeze",
 ]
 
 model_save=1        # モデルを保存するかどうか 1なら保存
-data_frames=10      # 学習1dataあたりのフレーム数
+data_frames=5      # 学習1dataあたりのフレーム数
 all_data_frames=560+data_frames  # 元データの読み取る最大フレーム数
 
 bs=20   # バッチサイズ
 
-fc1=512
-fc2=512
+fc1=1024*2
+fc2=1024*2
 
 # 学習の繰り返し回数
-nepoch = 20
+nepoch = 30
 
 choice_parts=[0,1,2,3,4,5]
 delete_parts=[]
