@@ -8,7 +8,8 @@ udp_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 udp_socket.bind(("133.83.82.105", 5002))
 
 filename=input("ファイル名")
-filename=filename+'1'
+foldername='/dataset_name/'
+filename=filename+'_gou_'+'5'
 print("Waiting for UDP data")
 nframe=0
 dataframe=600
