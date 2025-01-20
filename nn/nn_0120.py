@@ -1,34 +1,25 @@
-# 準備あれこれ
+# 必要なライブラリのインポート
+import os
 import numpy as np
 import matplotlib.pyplot as plt
 import pandas as pd
-import seaborn
-seaborn.set()
-from torch.utils.data import Dataset
-
-# PyTorch 関係のほげ
+import seaborn as sns
+from torch.utils.data import Dataset, DataLoader
 import torch
 import torch.nn as nn
-from torch.utils.data import DataLoader
-from torchvision.transforms import ToTensor
 import torchsummary
 import csv
-
-import pandas as pd
-import seaborn as sns
-sns.set()
-
 from sklearn.metrics import f1_score
 from sklearn.model_selection import train_test_split
 
+sns.set()
+
 #---------------------------------------------------
 # パラメータここから
-dataset_path="../dataset_monhan_shibu/"
-#dataset_days="1121"
-datasetdays=["1","2"]
+dataset_path = "../dataset_name/"
+datasetdays = ["1", "2","3","4"]
 
-
-motions=[
+motions = [
     "vslash",
     "hslash_ul",
     "hslash_ur",
@@ -41,35 +32,40 @@ motions=[
     "golf"
 ]
 
-model_save=1        # モデルを保存するかどうか 1なら保存
-data_frames=5      # 学習1dataあたりのフレーム数
-all_data_frames=560+data_frames  # 元データの読み取る最大フレーム数
+name_list = [
+    "gou",
+    "haya",
+]
 
-bs=20   # バッチサイズ
+model_save = 1        # モデルを保存するかどうか 1なら保存
+data_frames = 10      # 学習1dataあたりのフレーム数
+all_data_frames = 580 + data_frames  # 元データの読み取る最大フレーム数
 
-fc1=1024*2
-fc2=1024*2
+bs = 20   # バッチサイズ
+
+fc1 = 1024 * 2
+fc2 = 1024 * 2
 
 # 学習の繰り返し回数
 nepoch = 30
 
-choice_parts=[0,1,2,3,4,5]
-delete_parts=[]
+choice_parts = [0, 1, 2, 3, 4, 5]
+delete_parts = []
 
 # パラメータ: ノイズの強さと生成回数を設定
 noise_level = 0.05  # ノイズの強さ
-noise_repetitions = 1  # ノイズ付きデータを生成する回数
+noise_repetitions = 0  # ノイズ付きデータを生成する回数
 
 # 学習データとテストデータを日付で分けるかどうか
-split_by_date = False#True  # Trueなら日付で分ける、Falseなら混ぜる
+split_by_date = False  # Trueなら日付で分ける、Falseなら混ぜる
 
 # パラメータここまで
 #----------------------------------------------------------------------------------
 
-data_cols=(7+2)*6       # CSVの列数
-cap_cols=7*6            # 7DoFデータのみの列数
+data_cols = (7 + 2) * 6       # CSVの列数
+cap_cols = 7 * 6              # 7DoFデータのみの列数
 
-learn_par=0.95
+learn_par = 0.4
 
 # CUDAの準備
 device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
@@ -83,28 +79,35 @@ date_labels_list = []
 
 date_to_index = {date: idx for idx, date in enumerate(datasetdays)}
 
-for date_idx, date in enumerate(datasetdays):
-    for motion_idx, motion in enumerate(motions):
-        filepath=dataset_path+motion+date+".csv"
-        print(filepath)
-        data = np.genfromtxt(filepath, delimiter=',', filling_values=0)[:all_data_frames, :data_cols]
-        cap_data = np.delete(data, [7,8,16,17,25,26,34,35,43,44,52,53], 1)
-        # デバイス選択
-        cap_cols=len(choice_parts)*7
-        delete_list=[]
-        for i in delete_parts:
-            delete_list.extend(range(i*7, i*7+7))
-        #print("delete cols = ", delete_list)
-        cap_choice_data = np.delete(cap_data, delete_list, 1)
-        data_list.append(cap_choice_data)
-        labels_list.append(motion_idx)
-        date_labels_list.append(date_idx)
+for name in name_list:
+    for date_idx, date in enumerate(datasetdays):
+        for motion_idx, motion in enumerate(motions):
+            filename = f"{motion}_{name}_{date}.csv"
+            filepath = dataset_path+name+"/"+filename
+            print(f"読み込み中: {filepath}")
+            if not os.path.exists(filepath):
+                print(f"警告: ファイルが存在しません -> {filepath}")
+                continue  # ファイルが存在しない場合はスキップ
+
+            data = np.genfromtxt(filepath, delimiter=',', filling_values=0)[:all_data_frames, :data_cols]
+            cap_data = np.delete(data, [7, 8, 16, 17, 25, 26, 34, 35, 43, 44, 52, 53], 1)
+            
+            # デバイス選択
+            cap_cols = len(choice_parts) * 7
+            delete_list = []
+            for i in delete_parts:
+                delete_list.extend(range(i * 7, i * 7 + 7))
+            #print("delete cols = ", delete_list)
+            cap_choice_data = np.delete(cap_data, delete_list, 1)
+            data_list.append(cap_choice_data)
+            labels_list.append(motion_idx)
+            date_labels_list.append(date_idx)
 
 # データを分割
 if split_by_date:
     # 学習データとテストデータを日付で分ける場合
-    train_dates = ["1","2","3"]
-    test_dates = ["4"]
+    train_dates = ["1", "2"]  # 必要に応じて変更
+    test_dates = []  # 必要に応じて設定
     train_date_indices = [date_to_index[date] for date in train_dates]
     test_date_indices = [date_to_index[date] for date in test_dates]
 
@@ -154,7 +157,8 @@ else:
     data_labels_array = np.array(data_labels_list)
 
     np_data, np_Tdata, np_data_label, np_Tdata_label = train_test_split(
-        data_sequences_array, data_labels_array, test_size=1 - learn_par, shuffle=True, stratify=data_labels_array)
+        data_sequences_array, data_labels_array, test_size=1 - learn_par, shuffle=True, stratify=data_labels_array
+    )
 
 # === ここからノイズ付加を追加 ===
 def add_noise_multiple(data, noise_level=0.01, repetitions=1):
@@ -197,8 +201,8 @@ class dataset_class(Dataset):
 # データ読み込みの仕組み
 dsL = dataset_class(t_data, t_data_label)
 dsT = dataset_class(t_Tdata, t_Tdata_label)
-dlL = DataLoader(dsL, batch_size= bs, shuffle=True)
-dlT = DataLoader(dsT, batch_size= bs, shuffle=False)
+dlL = DataLoader(dsL, batch_size=bs, shuffle=True)
+dlT = DataLoader(dsT, batch_size=bs, shuffle=False)
 print(f'学習データ数: {len(dsL)}  テストデータ数: {len(dsT)}')
 
 def display_confusion_matrix(chart, class_names):
@@ -216,7 +220,6 @@ def display_confusion_matrix(chart, class_names):
     plt.ylabel('Actual')
     plt.title('Confusion Matrix Heatmap')
     plt.show()
-
 
 # 1epoch の学習を行う関数
 def train(model, lossFunc, optimizer, dl):
@@ -308,7 +311,6 @@ class MLP4(nn.Module):
         X = self.fc2(X)
         X = self.fc3(X)
         return X
-
 
 # ネットワークモデル
 net = MLP4(data_frames * cap_cols, fc1, fc2, len(motions)).to(device)
