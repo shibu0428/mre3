@@ -29,7 +29,7 @@ motions = [
     "roll_r",
     "roll_l",
     "walk",
-    "golf"
+    #"golf"
 ]
 
 name_list = [
@@ -45,11 +45,11 @@ all_data_frames = 580 + data_frames  # 元データの読み取る最大フレ�
 
 bs = 20   # バッチサイズ
 
-fc1 = 1024 * 4
-fc2 = 1024 * 4
+fc1 = 1024 * 2
+fc2 = 1024 * 2
 
 # 学習の繰り返し回数
-nepoch = 20
+nepoch = 15
 
 choice_parts = [0, 1, 2, 3, 4, 5]
 delete_parts = []
@@ -63,11 +63,11 @@ split_by_date = False   # 日付で分けるか (元の実装)
 split_by_person = True  # 人で分けるか（今回追加したフラグ）
 
 # 人で分ける場合の、学習用・テスト用の振り分け
-train_names = ["sibu", "haya","oga"]  # 学習に使う人
+train_names = ["sibu","haya","oga"]  # 学習に使う人
 test_names  = ["gou"]  # テストに使う人
 
 # 学習データとテストデータを混ぜてランダムに分割する場合の割合
-learn_par = 0.4
+learn_par = 0.7
 # パラメータここまで
 #----------------------------------------------------------------------------------
 
@@ -385,7 +385,7 @@ for t in range(1, nepoch + 1):
     lossL, rateL = train(net, loss_func, optimizer, dlL)
     lossT, rateT = evaluate(net, loss_func, dlT)
     results.append([t, lossL, lossT, rateL, rateT])
-    if (t % 5 == 0):
+    if (t % 1 == 0):
         print(f'{t:3d}   {lossL:.6f}   {lossT:.6f}   {rateL:.5f}   {rateT:.5f}')
 
 chart = evaluate_test(net, dlT, len(motions))
