@@ -36,7 +36,8 @@ name_list = [
     "gou",
     "haya",
     "sibu",
-    "oga"
+    "oga",
+    "yama"
 ]
 
 model_save = 1        # モデルを保存するかどうか 1なら保存
@@ -63,8 +64,8 @@ split_by_date = False   # 日付で分けるか (元の実装)
 split_by_person = True  # 人で分けるか（今回追加したフラグ）
 
 # 人で分ける場合の、学習用・テスト用の振り分け
-train_names = ["sibu","haya","oga"]  # 学習に使う人
-test_names  = ["gou"]  # テストに使う人
+train_names = ["sibu","haya","oga","gou"]  # 学習に使う人
+test_names  = ["yama"]  # テストに使う人
 
 # 学習データとテストデータを混ぜてランダムに分割する場合の割合
 learn_par = 0.7

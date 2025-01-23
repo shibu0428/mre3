@@ -7,7 +7,7 @@ udp_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 #udp_socket.bind(("192.168.10.110", 5002))  # IPアドレスを指定してバインド
 udp_socket.bind(("133.83.82.105", 5002))
 #udp_socket.bind(("10.20.145.63", 5002))
-tag='_sibu_'+'5'
+tag='_yama_'+'5'
 print("Waiting for UDP data")
 nframe=0
 dataframe=600

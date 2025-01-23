@@ -18,11 +18,11 @@ sns.set()
 dataset_path = "../dataset_name/"
 
 # 再学習に使う人物と日付
-fine_tuning_person = "gou"   # 例："gou"
+fine_tuning_person = "yama"   # 例："gou"
 fine_tuning_days = ["1","2","3"]     # 例：3日目だけ使う
 
 # テストに使う人物と日付（再学習には使わない）
-test_person = "gou"          # 同じ人物の別日、あるいは別人を指定してもよい
+test_person = "yama"          # 同じ人物の別日、あるいは別人を指定してもよい
 test_days = ["4","5"]            # 例：4日目だけ使う
 
 # モーションの種類
