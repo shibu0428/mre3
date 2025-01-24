@@ -3,12 +3,14 @@
 from fine_tune_class import fine_tune
 
 # 保存用パス・ファイル名などの共通設定
+out_num='1'
+
 dir = '../fine_models/'
 models_dir='../models/'
 model_path='.path'
-path = '_fine.path'
-cm_name = '_finecm.png'
-lc_name = '_finelc.png'
+path = out_num+'_fine.path'
+cm_name = out_num+'_finecm.png'
+lc_name = out_num+'_finelc.png'
 
 # 事前学習済みモデル（追加学習のベースとなるモデル）のパス
 
@@ -17,8 +19,8 @@ lc_name = '_finelc.png'
 # 例1: train_name="yama", 学習に使う日付=["1","2","3"], テストに使う日付=["4","5"]
 # --------------------------------------------------------------------------------
 
-train_list=["1", "2", "4"]
-test_list=["3","5"]
+train_list=["2", "3", "4","5"]
+test_list=["1"]
 epoc=8
 
 name='yama'

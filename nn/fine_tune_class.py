@@ -163,7 +163,7 @@ def fine_tune(
 
     # デバイス選択
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-    print(f"Using device: {device}")
+    #print(f"Using device: {device}")
 
     # --------------------------------------------------------------
     # 2. 「学習データ」「テストデータ」の読み込み
@@ -223,7 +223,7 @@ def fine_tune(
 
     if os.path.exists(model_path):
         net.load_state_dict(torch.load(model_path, map_location=device))
-        print(f"学習済みモデルをロードしました: {model_path}")
+        #print(f"学習済みモデルをロードしました: {model_path}")
     else:
         print(f"【警告】モデルファイル {model_path} が見つかりません。")
 
@@ -306,8 +306,8 @@ def fine_tune(
     def display_confusion_matrix(chart, class_names, save_path=None):
         df_cm = pd.DataFrame(chart.astype(int), index=class_names, columns=class_names)
 
-        print("Confusion Matrix:")
-        print(df_cm)
+        #print("Confusion Matrix:")
+        #print(df_cm)
 
         plt.figure(figsize=(10, 7))
         sns.heatmap(df_cm, annot=True, fmt='d', cmap='Blues')
@@ -317,7 +317,7 @@ def fine_tune(
 
         if save_path is not None:
             plt.savefig(save_path)
-            print(f"混同行列を画像として保存しました: {save_path}")
+            #print(f"混同行列を画像として保存しました: {save_path}")
         plt.close()
 
     # 学習曲線描画用 (epochごとに保存した結果をまとめる)
@@ -384,11 +384,11 @@ def fine_tune(
 
     plt.tight_layout()
     plt.savefig(learning_curve_save_name)
-    print(f"学習曲線を画像として保存しました: {learning_curve_save_name}")
+    #print(f"学習曲線を画像として保存しました: {learning_curve_save_name}")
     plt.close()
 
     # --------------------------------------------------------------
     # 9. 再学習後のモデルを保存
     # --------------------------------------------------------------
     torch.save(net.state_dict(), model_save_name)
-    print(f"再学習後のモデルを保存しました: {model_save_name}")
+    #print(f"再学習後のモデルを保存しました: {model_save_name}")
