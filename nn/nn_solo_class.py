@@ -311,7 +311,7 @@ def train_single_person(
         "gou":"D",
         "oga":"E",
     }
-    hikensha=hikensha_key.get(train_name,"ERROR")
+    hikensha=hikensha_key.get(person_name,"ERROR")
     
     # ------------------------
     # 7. 混同行列 + 学習曲線の描画
