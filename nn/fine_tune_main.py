@@ -1,6 +1,6 @@
 # fine_main.py
 
-from fine_tune_class import fine_tune
+from fine_tune_class2 import fine_tune
 
 # 保存用パス・ファイル名などの共通設定
 out_num='1'
