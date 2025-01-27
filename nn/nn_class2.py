@@ -92,7 +92,7 @@ def train_and_evaluate(
             for motion_idx, motion in enumerate(motions):
                 filename = f"{motion}_{name}_{date}.csv"
                 filepath = os.path.join(dataset_path, name, filename)
-                print(f"読み込み中: {filepath}")
+                #print(f"読み込み中: {filepath}")
 
                 if not os.path.exists(filepath):
                     print(f"警告: ファイルが存在しません -> {filepath}")
@@ -346,6 +346,7 @@ def train_and_evaluate(
         ax[1].set_title("Loss")
         ax[1].set_xlabel("Epoch")
         ax[1].set_ylabel("Loss")
+        ax[1].set_ylim(0, 1.0)      # ← 縦軸のスケールを 0 から 6 に設定
         ax[1].legend()
         ax[1].grid(True)
 
@@ -355,11 +356,12 @@ def train_and_evaluate(
         ax[2].set_title("Accuracy")
         ax[2].set_xlabel("Epoch")
         ax[2].set_ylabel("Accuracy")
+        ax[2].set_ylim(0.4, 1.0)      # ← 縦軸のスケールを 0 から 6 に設定
         ax[2].legend()
         ax[2].grid(True)
 
         # 全体タイトル (人名などを入れる)
-        fig.suptitle(f"Result for {person_name}", fontsize=16)
+        fig.suptitle(f"Result of {person_name}", fontsize=16)
 
         plt.tight_layout()
         plt.savefig(save_path)
@@ -367,6 +369,15 @@ def train_and_evaluate(
         print(f"最終結果を1枚にまとめた画像として保存しました: {save_path}")
 
     # グラフ作成&保存 (test_names[0] の名前をタイトルに入れる例)
+    hikensha_key={
+        "sibu":"A",
+        "yama":"B",
+        "haya":"C",
+        "gou":"D",
+        "oga":"E",
+    }
+    hikensha=hikensha_key.get(test_names[0],"ERROR")
+
     plot_final_figure(
         chart,
         motions,
@@ -375,7 +386,7 @@ def train_and_evaluate(
         dlL,
         dlT,
         save_path=learning_curve_save_name,
-        person_name=test_names[0]  # タイトルに表示したい名前
+        person_name=hikensha  # タイトルに表示したい名前
     )
 
     # ------------------------------------------------------

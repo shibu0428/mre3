@@ -325,10 +325,19 @@ def fine_tune(
 
     chart = evaluate_confusion(net, dl_test, len(motions))
 
+    hikensha_key={
+        "sibu":"A",
+        "yama":"B",
+        "haya":"C",
+        "gou":"D",
+        "oga":"E",
+    }
+    hikensha=hikensha_key.get(train_name,"ERROR")
+
     # --------------------------------------------------------------
     # 8. 混同行列+学習曲線を1枚にまとめて保存
     # --------------------------------------------------------------
-    def plot_final_figure(conf_matrix, class_names, history, person_name, save_path):
+    def plot_final_figure(conf_matrix, class_names, history, hikensha, save_path):
         """
         混同行列と学習曲線を1枚にまとめて描画・保存する。
         person_name: グラフのタイトル等に使用
@@ -358,6 +367,7 @@ def fine_tune(
         ax[1].set_title("Loss Curve")
         ax[1].set_xlabel("Epoch")
         ax[1].set_ylabel("Loss")
+        ax[1].set_ylim(0, 0.8)      # ← 縦軸のスケールを 0 から 6 に設定
         ax[1].legend()
         ax[1].grid(True)
 
@@ -367,18 +377,21 @@ def fine_tune(
         ax[2].set_title("Accuracy Curve")
         ax[2].set_xlabel("Epoch")
         ax[2].set_ylabel("Accuracy")
+        ax[2].set_ylim(0.6, 1.0)      # ← 縦軸のスケールを 0 から 6 に設定
         ax[2].legend()
         ax[2].grid(True)
 
-        fig.suptitle(f"Fine Tuning Result for {person_name}", fontsize=16)
+        fig.suptitle(f"Fine Tuning Result for {hikensha}", fontsize=16)
 
         plt.tight_layout()
         plt.savefig(save_path)
         plt.close()
         print(f"混同行列と学習曲線を1枚にまとめた画像を保存しました: {save_path}")
 
+
+
     # 1枚にまとめて保存
-    plot_final_figure(chart, motions, training_history, train_name, learning_curve_save_name)
+    plot_final_figure(chart, motions, training_history, hikensha+test_num[0], learning_curve_save_name)
 
     # --------------------------------------------------------------
     # 9. 追加学習後のモデルを保存
