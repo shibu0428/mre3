@@ -5,8 +5,8 @@ from fine_tune_class2 import fine_tune
 # 保存用パス・ファイル名などの共通設定
 out_num='1'
 
-dir = '../fine_models/'
-models_dir='../models/'
+dir = '../fine_models2/'
+models_dir='../models2/'
 model_path='.path'
 path = out_num+'_fine.path'
 cm_name = out_num+'_finecm.png'
