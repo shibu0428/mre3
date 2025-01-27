@@ -30,17 +30,17 @@ motions = [
     "walk",
     "golf",
     "turnR",
-    # "turnL",
+    "turnL",
     "punchR",
     "punchL",
     "kickR",
     "kickL",
     "shakeR",
     "shakeL",
-    # "walkleg",
+    "walkleg",
     "jump",
-    # "rhandR",
-    # "rhandL",
+    "rhandR",
+    "rhandL",
 ]
 
 name_list = [
@@ -48,23 +48,23 @@ name_list = [
 ]
 
 model_save = 0        # モデルを保存するかどうか 1なら保存
-data_frames = 10      # 学習1dataあたりのフレーム数
+data_frames = 20      # 学習1dataあたりのフレーム数
 all_data_frames = 560 + data_frames  # 元データの読み取る最大フレーム数
 
 bs = 20   # バッチサイズ
 
-fc1 = 1024 * 2
-fc2 = 1024 * 2
+fc1 = 1024 * 1
+fc2 = 1024 * 1
 
 # 学習の繰り返し回数
-nepoch = 300
+nepoch = 60
 
 # ★変更: フレーム切り出しのステップ幅 (1なら従来通り)
-frame_step = 20
+frame_step = 1
 
 # タイトルや保存ファイル名に step を含める
 label_str='sprit '+str(data_frames)+'frames step:'+str(frame_step)+' unit:'+str(fc1)
-save_path=str(data_frames)+'_'+str(frame_step)+'_'+str(fc1)+'solo_sibu.png'
+save_path=str(data_frames)+'_'+str(frame_step)+'_'+str(fc1)+'solo_sibu_fulldata.png'
 
 choice_parts = [0, 1, 2, 3, 4, 5]
 delete_parts = []
@@ -194,12 +194,13 @@ def display_confusion_matrix(chart, class_names):
 
     print("Confusion Matrix:")
     print(df_cm)
-
-    plt.subplot(1, 3, 1)
+    plt.figure(figsize=(14, 14))
+    #plt.subplot(1, 3, 1)
     sns.heatmap(df_cm, annot=True, fmt='d', cmap='Blues')
     plt.xlabel('Predicted')
     plt.ylabel('Actual')
     plt.title('Confusion Matrix Heatmap')
+    plt.savefig(save_path)
 
 def train(model, lossFunc, optimizer, dl):
     loss_sum = 0.0
@@ -251,7 +252,7 @@ def evaluate_test(model, dl, motions_len):
 def printdata(m_size, subtitle):
     data = np.array(results)
 
-    plt.subplot(1, 3, 2)
+    #plt.subplot(1, 3, 2)
     plt.plot(data[:, 0], data[:, 1], '.-', label='training data')
     plt.plot(data[:, 0], data[:, 2], '.-', label='test data')
     plt.axhline(0.0, color='gray')
@@ -268,6 +269,7 @@ def printdata(m_size, subtitle):
     plt.title('Accuracy')
 
     plt.suptitle('modelSize' + str(m_size) + str(subtitle))
+    #plt.savefig(save_path)
 
     loss2, rrate = evaluate(net, loss_func, dlL)
     print(f'# 学習データに対する損失: {loss2:.5f}  識別率: {rrate:.4f}')
@@ -314,7 +316,7 @@ plt.figure(figsize=(18, 5))
 display_confusion_matrix(chart, motions)
 printdata([fc1, fc2], label_str)
 plt.tight_layout()
-plt.savefig(save_path)
+#plt.savefig(save_path)
 plt.show()
 
 def calculate_f1(model, dl, motions_len):
