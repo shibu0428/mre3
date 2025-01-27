@@ -194,13 +194,12 @@ def display_confusion_matrix(chart, class_names):
 
     print("Confusion Matrix:")
     print(df_cm)
-    plt.figure(figsize=(14, 14))
-    #plt.subplot(1, 3, 1)
+
+    plt.subplot(1, 3, 1)
     sns.heatmap(df_cm, annot=True, fmt='d', cmap='Blues')
     plt.xlabel('Predicted')
     plt.ylabel('Actual')
     plt.title('Confusion Matrix Heatmap')
-    plt.savefig(save_path)
 
 def train(model, lossFunc, optimizer, dl):
     loss_sum = 0.0
@@ -252,7 +251,7 @@ def evaluate_test(model, dl, motions_len):
 def printdata(m_size, subtitle):
     data = np.array(results)
 
-    #plt.subplot(1, 3, 2)
+    plt.subplot(1, 3, 2)
     plt.plot(data[:, 0], data[:, 1], '.-', label='training data')
     plt.plot(data[:, 0], data[:, 2], '.-', label='test data')
     plt.axhline(0.0, color='gray')
@@ -269,7 +268,6 @@ def printdata(m_size, subtitle):
     plt.title('Accuracy')
 
     plt.suptitle('modelSize' + str(m_size) + str(subtitle))
-    #plt.savefig(save_path)
 
     loss2, rrate = evaluate(net, loss_func, dlL)
     print(f'# 学習データに対する損失: {loss2:.5f}  識別率: {rrate:.4f}')
@@ -316,7 +314,7 @@ plt.figure(figsize=(18, 5))
 display_confusion_matrix(chart, motions)
 printdata([fc1, fc2], label_str)
 plt.tight_layout()
-#plt.savefig(save_path)
+plt.savefig(save_path)
 plt.show()
 
 def calculate_f1(model, dl, motions_len):
