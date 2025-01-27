@@ -3,7 +3,7 @@ from nn_class2 import train_and_evaluate
 dir='../models2/'
 path='.path'
 cm_name='cm.png'
-lc_name='lc.png'
+lc_name='.png'
 
 
 train_names = ["sibu", "haya", "oga", "gou"]  # 学習に使う人
