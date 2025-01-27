@@ -57,7 +57,14 @@ fc1 = 1024 * 2
 fc2 = 1024 * 2
 
 # 学習の繰り返し回数
-nepoch = 30
+nepoch = 300
+
+# ★変更: フレーム切り出しのステップ幅 (1なら従来通り)
+frame_step = 20
+
+# タイトルや保存ファイル名に step を含める
+label_str='sprit '+str(data_frames)+'frames step:'+str(frame_step)+' unit:'+str(fc1)
+save_path=str(data_frames)+'_'+str(frame_step)+'_'+str(fc1)+'solo_sibu.png'
 
 # ★変更: フレーム切り出しのステップ幅 (1なら従来通り)
 frame_step = 1
