@@ -1,6 +1,6 @@
 from nn_class2 import train_and_evaluate
 
-dir='../models2/'
+dir='../models_4to1/'
 path='.path'
 cm_name='cm.png'
 lc_name='.png'

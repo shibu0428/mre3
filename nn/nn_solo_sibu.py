@@ -64,7 +64,7 @@ frame_step = 1
 
 # タイトルや保存ファイル名に step を含める
 label_str='sprit '+str(data_frames)+'frames step:'+str(frame_step)+' unit:'+str(fc1)
-save_path=str(data_frames)+'_'+str(frame_step)+'_'+str(fc1)+'solo_sibu_cutdata2.png'
+save_path=str(data_frames)+'_'+str(frame_step)+'_'+str(fc1)+'solo_sibu2.png'
 
 # ★変更: フレーム切り出しのステップ幅 (1なら従来通り)
 frame_step = 1
@@ -198,13 +198,12 @@ def display_confusion_matrix(chart, class_names):
 
     print("Confusion Matrix:")
     print(df_cm)
-    plt.figure(figsize=(14,14))
-    #plt.subplot(1, 3, 1)
+    plt.subplot(1, 3, 1)
     sns.heatmap(df_cm, annot=True, fmt='d', cmap='Blues')
     plt.xlabel('Predicted')
     plt.ylabel('Actual')
     plt.title('Confusion Matrix Heatmap')
-    plt.savefig(save_path)
+    #plt.savefig(save_path)
 
 def train(model, lossFunc, optimizer, dl):
     loss_sum = 0.0
@@ -315,12 +314,12 @@ for t in range(1, nepoch + 1):
 chart = evaluate_test(net, dlT, len(motions))
 print(chart)
 
-#plt.figure(figsize=(18, 5))
+plt.figure(figsize=(18, 5))
 display_confusion_matrix(chart, motions)
-#printdata([fc1, fc2], label_str)
-#plt.tight_layout()
-#plt.savefig(save_path)
-#plt.show()
+printdata([fc1, fc2], label_str)
+plt.tight_layout()
+plt.savefig(save_path)
+plt.show()
 
 def calculate_f1(model, dl, motions_len):
     all_true_labels = []
