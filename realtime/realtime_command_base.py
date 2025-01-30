@@ -60,7 +60,23 @@ motions = [
     "walk",
 ]
 
+scale_par=np.array([
+    0.3,#vslash
+    0.3,#hslash_ul
+    0.3,#hslash_ur
+    0.3,#thrust
+    0.3,#noutou_kosi
+    0.3,#noutou_senaka
+    0.4,#roll_r
+    0.3,#roll_l
+    0.3,#walk
 
+])
+
+baseline_probs = np.zeros(len(motions))
+BASELINE_FRAMES = 100  # 何フレーム分をベースラインとして集計するか
+baseline_count = 0
+baseline_acquired = False
 
 
 #学習した時のclass定義と揃える
@@ -100,7 +116,7 @@ n=0
 fr=0
 
 
-for tm in range(3):
+for tm in range(5):
     print(3-tm)
     time.sleep(1)
 print("start")
@@ -143,11 +159,12 @@ Y_hist=[]
 probs_hist=[]
 confidence_hist=[]
 
+
 nframe=0
 while True:
     try:
         data, addr = udp_socket.recvfrom(4096)  # データを受信
-        
+
 
         #データがそろっていないときの処理
         if nframe<nframes:
@@ -176,11 +193,40 @@ while True:
         t_in_data = t_in_data.view(1, -1)
         Y = model(t_in_data)
         probs = F.softmax(Y, dim=1)  # ソフトマックスで確率に変換
+
+        #ここからベースライン決定
+        probs_array = probs[0].detach().cpu().numpy()  # numpy配列化
+        if not baseline_acquired:
+            baseline_probs += probs_array
+            baseline_count += 1
+    
+            # ある程度のフレーム数を集めたら平均ベースラインを確定
+            if baseline_count >= BASELINE_FRAMES:
+                baseline_probs /= baseline_count
+                #baseline_probs=baseline_probs*scale_par
+                baseline_acquired = True
+                print("Baseline acquired.")
+    
+            # ベースライン取得が完了するまではコマンド出力しない
+            continue
+
+        corrected_probs = probs_array - baseline_probs
+        corrected_probs = np.clip(corrected_probs, 0.0, None)
+
+        '''
+        # 正規化して合計を1に
+        sum_corrected = corrected_probs.sum()
+        if sum_corrected > 0:
+            corrected_probs /= sum_corrected
+        '''
+        predicted_class = np.argmax(corrected_probs)
+        confidence = corrected_probs[predicted_class]
+        '''
         predicted_class = Y.argmax(dim=1).item()  # 最も確率の高いクラス
         confidence = probs[0, predicted_class].item()  # 確信度（確率）
-
+        '''
         Y_hist.append(Y[0].detach().cpu().numpy())
-        probs_hist.append(probs[0].detach().cpu().numpy())
+        probs_hist.append(corrected_probs)
 
         if confidence*100>75:
             print(f"予測クラス: {motions[predicted_class]} (確信度: {confidence * 100:.2f}%)")
@@ -192,7 +238,7 @@ while True:
         else:
             print(f"予測クラス: None (確信度: {confidence * 100:.2f}%)")
 
-        if nframe>10000:
+        if nframe>2000:
             break
                     
             
@@ -202,15 +248,15 @@ while True:
         continue
 
 
-
+print(baseline_probs)
 # UDPソケットを閉じる
 udp_socket.close()
 
 #ループ処理が終わったら各グラフを表示
 g_title=input("Yの履歴グラフのタイトルを入力してください")
 
-#Y_np_hist=np.array(probs_hist)
-Y_np_hist=np.array(Y_hist)
+Y_np_hist=np.array(probs_hist)
+#Y_np_hist=np.array(Y_hist)
 # グラフをプロット
 plt.figure()
 for idx, motion in enumerate(motions):

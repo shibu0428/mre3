@@ -13,20 +13,11 @@ def main():
     print("準備ができたら、ゲームウィンドウをアクティブにしてください。")
     time.sleep(prep_time)  # 準備時間
 
-    print(f"キー「{key_to_press}」の連打を{press_duration}秒間開始します。")
-    start_time = time.time()
-    end_time = start_time + press_duration
+    print(f"キー「{key_to_press} 開始します。")
 
-    try:
-        while time.time() < end_time:
-            pydirectinput.click()
-            #pydirectinput.press(key_to_press)
-            time.sleep(press_interval)
-    except KeyboardInterrupt:
-        print("ユーザーによってプログラムが中断されました。")
-        sys.exit()
-
-    print("キーの連打を終了しました。")
+    pydirectinput.keyDown('d')
+    pydirectinput.press('r')
+    pydirectinput.keyUp('d')
 
 if __name__ == "__main__":
     main()
