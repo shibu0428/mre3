@@ -60,16 +60,17 @@ motions = [
     "walk",
 ]
 
+scaling_flag=0  #1ならスケーリングをおこなう
 scale_par=np.array([
-    0.3,#vslash
-    0.3,#hslash_ul
-    0.3,#hslash_ur
-    0.3,#thrust
-    0.3,#noutou_kosi
-    0.3,#noutou_senaka
+    0.4,#vslash
+    0.4,#hslash_ul
+    0.4,#hslash_ur
+    0.4,#thrust
+    0.4,#noutou_kosi
+    0.4,#noutou_senaka
     0.4,#roll_r
-    0.3,#roll_l
-    0.3,#walk
+    0.4,#roll_l
+    0.4,#walk
 
 ])
 
@@ -203,14 +204,17 @@ while True:
             # ある程度のフレーム数を集めたら平均ベースラインを確定
             if baseline_count >= BASELINE_FRAMES:
                 baseline_probs /= baseline_count
-                #baseline_probs=baseline_probs*scale_par
+                baseline_probs=baseline_probs*scale_par
                 baseline_acquired = True
                 print("Baseline acquired.")
     
             # ベースライン取得が完了するまではコマンド出力しない
             continue
 
-        corrected_probs = probs_array - baseline_probs
+        if scaling_flag==1:
+            corrected_probs = probs_array - baseline_probs
+        else:
+            corrected_probs = probs_array
         corrected_probs = np.clip(corrected_probs, 0.0, None)
 
         '''
@@ -228,7 +232,7 @@ while True:
         Y_hist.append(Y[0].detach().cpu().numpy())
         probs_hist.append(corrected_probs)
 
-        if confidence*100>75:
+        if confidence*100>85:
             print(f"予測クラス: {motions[predicted_class]} (確信度: {confidence * 100:.2f}%)")
             thread = threading.Thread(target=command, args=(motions[predicted_class],))
             thread.start()
