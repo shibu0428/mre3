@@ -70,7 +70,6 @@ scale_par=np.array([
     0.4,#roll_r
     0.3,#roll_l
     0.3,#walk
-
 ])
 
 baseline_probs = np.zeros(len(motions))
