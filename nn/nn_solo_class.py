@@ -7,6 +7,7 @@ from sklearn.metrics import f1_score
 import matplotlib.pyplot as plt
 import seaborn as sns
 import pandas as pd
+import time
 
 sns.set()
 
@@ -288,18 +289,21 @@ def train_single_person(
     # ------------------------
     results = []  # [ (epoch, train_loss, test_loss, train_acc, test_acc), ... ]
     print("\n# epoch | train_loss | test_loss | train_acc | test_acc")
+    starttime=time.time()
     for epoch in range(1, nepoch + 1):
         tr_loss, tr_acc = train_one_epoch(net, dl_train)
         te_loss, te_acc, _ = evaluate(net, dl_test)
         results.append([epoch, tr_loss, te_loss, tr_acc, te_acc])
         print(f"{epoch:3d}    {tr_loss:.6f}    {te_loss:.6f}    {tr_acc:.4f}    {te_acc:.4f}")
-
+    endtime=time.time()
     # テスト最終評価
     final_loss, final_acc, final_f1 = evaluate(net, dl_test)
     print("\n=== テスト最終評価 ===")
-    print(f"Loss: {final_loss:.4f}")
-    print(f"Acc : {final_acc:.4f}")
-    print(f"F1  : {final_f1:.4f}")
+    print(f"{person_name},{test_num[0]} Acc : {final_acc:.4f}")
+    print(endtime-starttime)
+    #print(f"Loss: {final_loss:.4f}")
+    #print(f"Acc : {final_acc:.4f}")
+    #print(f"F1  : {final_f1:.4f}")
 
     # 混同行列
     conf_matrix = evaluate_confusion(net, dl_test, num_classes)
@@ -357,7 +361,7 @@ def train_single_person(
 
         fig.suptitle(f"Training Result for {person_name}", fontsize=16)
         plt.tight_layout()
-        plt.savefig(save_path)
+        #plt.savefig(save_path)
         plt.close()
         print(f"\n混同行列 + 学習曲線を1枚にまとめた画像を保存しました: {save_path}")
 
@@ -367,5 +371,5 @@ def train_single_person(
     # ------------------------
     # 8. モデル保存
     # ------------------------
-    torch.save(net.state_dict(), model_save_name)
-    print(f"モデルを保存しました: {model_save_name}")
+    #torch.save(net.state_dict(), model_save_name)
+    #print(f"モデルを保存しました: {model_save_name}")
