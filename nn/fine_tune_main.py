@@ -82,7 +82,7 @@ def train_fc_member(dir,models_dir,model_path,cm_name,lc_name,epoc,train_list,te
         learning_curve_save_name=dir + name + test_list[0] + lc_name      # 学習曲線画像の保存名
     )
 
-epoc=8
+epoc=15
 
 train_list=["2", "3", "4","5"]
 test_list=["1"]
