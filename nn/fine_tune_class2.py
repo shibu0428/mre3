@@ -387,9 +387,9 @@ def fine_tune(
         fig.suptitle(f"Fine Tuning Result for {hikensha}", fontsize=16)
 
         plt.tight_layout()
-        plt.savefig(save_path)
+        #plt.savefig(save_path)
         plt.close()
-        print(f"混同行列と学習曲線を1枚にまとめた画像を保存しました: {save_path}")
+        print(f"混同行列と学習曲線を1枚にまとめた画像を保存てません: {save_path}")
 
 
 
@@ -399,5 +399,5 @@ def fine_tune(
     # --------------------------------------------------------------
     # 9. 追加学習後のモデルを保存
     # --------------------------------------------------------------
-    torch.save(net.state_dict(), model_save_name)
-    print(f"再学習後のモデルを保存しました: {model_save_name}")
+    #torch.save(net.state_dict(), model_save_name)
+    print(f"再学習後のモデルを保存してません: {model_save_name}")
