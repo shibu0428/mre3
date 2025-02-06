@@ -9,6 +9,7 @@ from sklearn.metrics import f1_score
 import matplotlib.pyplot as plt
 import seaborn as sns
 import pandas as pd
+import time
 
 sns.set()
 
@@ -304,6 +305,7 @@ def fine_tune(
     # 6. 追加学習ループ
     # --------------------------------------------------------------
     training_history = []  # [(epoch, train_loss, train_acc, test_loss, test_acc), ...]
+    starttime=time.time()
     for epoch in range(1, fine_tune_epochs + 1):
         train_loss, train_acc = train_one_epoch(net, dl_fine)
         test_loss, test_acc, _ = evaluate(net, dl_test)
@@ -313,12 +315,13 @@ def fine_tune(
         print(f"[FineTune {epoch}/{fine_tune_epochs}] "
               f"train_loss: {train_loss:.4f}, train_acc: {train_acc:.4f}, "
               f"test_loss: {test_loss:.4f}, test_acc: {test_acc:.4f}")
-
+    endtime=time.time()
     # --------------------------------------------------------------
     # 7. テストデータでの評価
     # --------------------------------------------------------------
     final_test_loss, final_test_acc, final_test_f1 = evaluate(net, dl_test)
     print("==== テストデータ評価結果 (最終) ====")
+    print(f"time:  {endtime-starttime}")
     print(f"Loss: {final_test_loss:.4f}")
     print(f"Acc : {final_test_acc:.4f}")
     print(f"F1  : {final_test_f1:.4f}")
@@ -384,9 +387,9 @@ def fine_tune(
         fig.suptitle(f"Fine Tuning Result for {hikensha}", fontsize=16)
 
         plt.tight_layout()
-        plt.savefig(save_path)
+        #plt.savefig(save_path)
         plt.close()
-        print(f"混同行列と学習曲線を1枚にまとめた画像を保存しました: {save_path}")
+        print(f"混同行列と学習曲線を1枚にまとめた画像を保存てません: {save_path}")
 
 
 
@@ -396,5 +399,5 @@ def fine_tune(
     # --------------------------------------------------------------
     # 9. 追加学習後のモデルを保存
     # --------------------------------------------------------------
-    torch.save(net.state_dict(), model_save_name)
-    print(f"再学習後のモデルを保存しました: {model_save_name}")
+    #torch.save(net.state_dict(), model_save_name)
+    print(f"再学習後のモデルを保存してません: {model_save_name}")
