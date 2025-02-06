@@ -5,12 +5,12 @@ from nn_solo_class import train_single_person
 # 保存用パス・ファイル名などの共通設定
 out_num='1'
 
-dir = '../models_solo/'
-models_dir='../models2/'
+dir = '../temp_folder/'
+models_dir='../tempfolder/'
 model_path='.path'
 
-cm_name = '_fine.png'
-lc_name = '_fine.png'
+cm_name = 'no'
+lc_name = 'no'
 
 # 事前学習済みモデル（追加学習のベースとなるモデル）のパス
 
