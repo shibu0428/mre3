@@ -9,6 +9,7 @@ from sklearn.metrics import f1_score
 import matplotlib.pyplot as plt
 import seaborn as sns
 import pandas as pd
+import time
 
 sns.set()
 
@@ -304,6 +305,7 @@ def fine_tune(
     # 6. 追加学習ループ
     # --------------------------------------------------------------
     training_history = []  # [(epoch, train_loss, train_acc, test_loss, test_acc), ...]
+    starttime=time.time()
     for epoch in range(1, fine_tune_epochs + 1):
         train_loss, train_acc = train_one_epoch(net, dl_fine)
         test_loss, test_acc, _ = evaluate(net, dl_test)
@@ -313,12 +315,13 @@ def fine_tune(
         print(f"[FineTune {epoch}/{fine_tune_epochs}] "
               f"train_loss: {train_loss:.4f}, train_acc: {train_acc:.4f}, "
               f"test_loss: {test_loss:.4f}, test_acc: {test_acc:.4f}")
-
+    endtime=time.time()
     # --------------------------------------------------------------
     # 7. テストデータでの評価
     # --------------------------------------------------------------
     final_test_loss, final_test_acc, final_test_f1 = evaluate(net, dl_test)
     print("==== テストデータ評価結果 (最終) ====")
+    print(f"time:  {endtime-starttime}")
     print(f"Loss: {final_test_loss:.4f}")
     print(f"Acc : {final_test_acc:.4f}")
     print(f"F1  : {final_test_f1:.4f}")
